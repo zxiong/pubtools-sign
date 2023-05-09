@@ -1,1 +1,0 @@
-# pubtools-sign

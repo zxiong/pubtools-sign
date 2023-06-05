@@ -183,14 +183,14 @@ class MsgSigner(Signer):
             messages.append(message)
 
         signer_results = MsgSignerResults(status="ok", error_message="")
-        sign_results = ClearSignResult(
+        operation_result = ClearSignResult(
             signing_key=operation.signing_key, outputs=[""] * len(operation.inputs)
         )
         signing_results = SigningResults(
             signer=self,
             operation=operation,
             signer_results=signer_results,
-            sign_results=sign_results,
+            operation_result=operation_result,
         )
         LOG.debug(f"{len(messages)} messages to send")
 
@@ -233,12 +233,12 @@ class MsgSigner(Signer):
                 signer_results.error_message += f"{error.name} : {error.description}\n"
             return signing_results
 
-        sign_results = ClearSignResult(
+        operation_result = ClearSignResult(
             signing_key=operation.signing_key, outputs=[""] * len(messages)
         )
         for recv_id, received in recvc.recv.items():
-            sign_results.outputs[messages.index(message_to_data[recv_id])] = received
-        signing_results.sign_results = sign_results
+            operation_result.outputs[messages.index(message_to_data[recv_id])] = received
+        signing_results.operation_result = operation_result
         return signing_results
 
     @staticmethod
@@ -285,14 +285,14 @@ class MsgSigner(Signer):
             messages.append(message)
 
         signer_results = MsgSignerResults(status="ok", error_message="")
-        sign_results = ContainerSignResult(
+        operation_result = ContainerSignResult(
             signing_key=operation.signing_key, signed_claims=[""] * len(operation.digests)
         )
         signing_results = SigningResults(
             signer=self,
             operation=operation,
             signer_results=signer_results,
-            sign_results=sign_results,
+            operation_result=operation_result,
         )
         LOG.debug(f"{len(messages)} messages to send")
 
@@ -334,12 +334,12 @@ class MsgSigner(Signer):
                 signer_results.error_message += f"{error.name} : {error.description}\n"
             return signing_results
 
-        sign_results = ContainerSignResult(
+        operation_result = ContainerSignResult(
             signing_key=operation.signing_key, signed_claims=[""] * len(messages)
         )
         for recv_id, received in recvc.recv.items():
-            sign_results.signed_claims[messages.index(message_to_data[recv_id])] = received
-        signing_results.sign_results = sign_results
+            operation_result.signed_claims[messages.index(message_to_data[recv_id])] = received
+        signing_results.operation_result = operation_result
         return signing_results
 
 
@@ -380,8 +380,8 @@ def msg_clear_sign(inputs, signing_key=None, task_id=None, config=None):
     signing_result = msg_signer.sign(operation)
     return {
         "signer_result": signing_result.signer_results.to_dict(),
-        "operation_results": signing_result.sign_results.outputs,
-        "signing_key": signing_result.sign_results.signing_key,
+        "operation_results": signing_result.operation_result.outputs,
+        "signing_key": signing_result.operation_result.signing_key,
     }
 
 
@@ -419,8 +419,8 @@ def msg_container_sign(signing_key=None, task_id=None, config=None, digest=None,
     signing_result = msg_signer.sign(operation)
     return {
         "signer_result": signing_result.signer_results.to_dict(),
-        "operation_results": signing_result.sign_results.outputs,
-        "signing_key": signing_result.sign_results.signing_key,
+        "operation_results": signing_result.operation_result.outputs,
+        "signing_key": signing_result.operation_result.signing_key,
     }
 
 

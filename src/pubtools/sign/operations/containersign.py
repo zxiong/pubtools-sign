@@ -4,7 +4,7 @@ from dataclasses import field, dataclass
 
 from typing import List, ClassVar
 
-from ..results.sign_results import SignResults
+from ..results.operation_result import OperationResult
 
 from .base import SignOperation
 
@@ -13,7 +13,7 @@ from .base import SignOperation
 class ContainerSignOperation(SignOperation):
     """ContainersSignOperation model class."""
 
-    ResultType: ClassVar[SignResults]
+    ResultType: ClassVar[OperationResult]
     digests: List[str] = field(metadata={"description": "List of digest to sign"})
     references: List[str] = field(metadata={"description": "List of references to sign"})
     signing_key: str = field(

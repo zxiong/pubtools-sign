@@ -275,7 +275,7 @@ def test_clear_sign(patched_uuid, f_config_msg_signer_ok):
                 signer=signer,
                 operation=clear_sign_operation,
                 signer_results=MsgSignerResults(status="ok", error_message=""),
-                sign_results=ClearSignResult(
+                operation_result=ClearSignResult(
                     outputs=["signed:'hello world'"], signing_key="test-signing-key"
                 ),
             )
@@ -308,7 +308,7 @@ def test_clear_sign_recv_errors(patched_uuid, f_config_msg_signer_ok):
                 signer_results=MsgSignerResults(
                     status="error", error_message="TestError : test error description\n"
                 ),
-                sign_results=ClearSignResult(outputs=[""], signing_key="test-signing-key"),
+                operation_result=ClearSignResult(outputs=[""], signing_key="test-signing-key"),
             )
 
 
@@ -339,7 +339,7 @@ def test_clear_sign_send_errors(patched_uuid, f_config_msg_signer_ok):
                 signer_results=MsgSignerResults(
                     status="error", error_message="TestError : test error description\n"
                 ),
-                sign_results=ClearSignResult(outputs=[""], signing_key="test-signing-key"),
+                operation_result=ClearSignResult(outputs=[""], signing_key="test-signing-key"),
             )
 
 
@@ -367,7 +367,7 @@ def test_container_sign(patched_uuid, f_config_msg_signer_ok):
                 signer=signer,
                 operation=container_sign_operation,
                 signer_results=MsgSignerResults(status="ok", error_message=""),
-                sign_results=ContainerSignResult(
+                operation_result=ContainerSignResult(
                     signed_claims=["signed:'claim'"], signing_key="test-signing-key"
                 ),
             )
@@ -402,7 +402,7 @@ def test_container_sign_recv_errors(patched_uuid, f_config_msg_signer_ok):
                 signer_results=MsgSignerResults(
                     status="error", error_message="TestError : test error description\n"
                 ),
-                sign_results=ContainerSignResult(
+                operation_result=ContainerSignResult(
                     signed_claims=[""], signing_key="test-signing-key"
                 ),
             )
@@ -436,7 +436,7 @@ def test_container_sign_send_errors(patched_uuid, f_config_msg_signer_ok):
                 signer_results=MsgSignerResults(
                     status="error", error_message="TestError : test error description\n"
                 ),
-                sign_results=ContainerSignResult(
+                operation_result=ContainerSignResult(
                     signed_claims=[""], signing_key="test-signing-key"
                 ),
             )

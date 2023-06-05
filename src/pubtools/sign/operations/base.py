@@ -5,14 +5,14 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import ClassVar, Dict, Any
 
-from ..results.sign_results import SignResults
+from ..results.operation_result import OperationResult
 
 
 @dataclass
 class SignOperation(ABC):
     """SignOperation Abstract class."""
 
-    ResultType: ClassVar[SignResults]
+    ResultType: ClassVar[OperationResult]
 
     @classmethod
     def doc_arguments(cls: SignOperation) -> Dict[str, Any]:

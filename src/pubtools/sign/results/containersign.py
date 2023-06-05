@@ -4,17 +4,17 @@ import dataclasses
 from typing import List, ClassVar
 from typing_extensions import Self
 
-from ..results.sign_results import SignResults
+from ..results.operation_result import OperationResult
 
 
 @dataclasses.dataclass
-class ContainerSignResult(SignResults):
-    """ContainerSignResults model."""
+class ContainerSignResult(OperationResult):
+    """ContainerOperationResult model."""
 
-    ResultType: ClassVar[SignResults]
+    ResultType: ClassVar[OperationResult]
     signed_claims: List[str]
     signing_key: str
 
     def to_dict(self: Self):
-        """Return dict representation of ContainerSignResult."""
+        """Return dict representation of ContainerOperationResult."""
         return {"signed_claims": self.signed_claims, "signing_key": self.signing_key}

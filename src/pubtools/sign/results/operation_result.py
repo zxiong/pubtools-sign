@@ -5,10 +5,10 @@ import dataclasses
 
 
 @dataclasses.dataclass()
-class SignResults(ABC):
-    """SignResults abstract class."""
+class OperationResult(ABC):
+    """OperationResult abstract class."""
 
     @abstractmethod
-    def to_dict(self: SignResults):
-        """Return dict representation of SignResults."""
+    def to_dict(self: OperationResult):
+        """Return dict representation of OperationResult."""
         ...  # pragma: no cover

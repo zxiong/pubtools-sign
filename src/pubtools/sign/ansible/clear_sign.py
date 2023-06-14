@@ -105,41 +105,6 @@ signing_key:
 """
 
 
-def clear_sign(inputs, signing_key=None, task_id=None, config=None):
-    """Run clear signing operation.
-
-    :param inputs: signing data
-    :type inputs: list
-    :param signing_key: signing key
-    :type signing_key: str
-    :param task_id: task ID
-    :type task_id: str
-    :param config: config file name
-    :type config: str
-
-    :return: dict
-    """
-    msg_signer = MsgSigner()
-    config = _get_config_file(config)
-    msg_signer.load_config(load_config(os.path.expanduser(config)))
-
-    str_inputs = []
-    for input_ in inputs:
-        if input_.startswith("@"):
-            str_inputs.append(open(input_.lstrip("@")).read())
-        else:
-            str_inputs.append(input_)
-    operation = ClearSignOperation(
-        inputs=str_inputs, signing_key=signing_key, task_id=task_id
-    )
-    signing_result = msg_signer.sign(operation)
-    return {
-        "signer_result": signing_result.signer_results.to_dict(),
-        "operation_results": signing_result.operation_result.outputs,
-        "signing_key": signing_result.operation_result.signing_key,
-    }
-
-
 def run_module():
     # define available arguments/parameters a user can pass to the module
     module_args = dict(
@@ -165,17 +130,33 @@ def run_module():
 
     # Call clear sign and return signed data
     try:
-        sign_result = clear_sign(
-            inputs, signing_key=signing_key, task_id=task_id, config=config
+        msg_signer = MsgSigner()
+        config = _get_config_file(config)
+        msg_signer.load_config(load_config(os.path.expanduser(config)))
+
+        str_inputs = []
+        for input_ in inputs:
+            if input_.startswith("@"):
+                str_inputs.append(open(input_.lstrip("@")).read())
+            else:
+                str_inputs.append(input_)
+        operation = ClearSignOperation(
+            inputs=str_inputs, signing_key=signing_key, task_id=task_id
         )
+        clear_signing_result = msg_signer.sign(operation)
+        signing_result = {
+            "signer_result": clear_signing_result.signer_results.to_dict(),
+            "operation_results": clear_signing_result.operation_result.outputs,
+            "signing_key": clear_signing_result.operation_result.signing_key,
+        }
     except Exception as ex:
         module.fail_json(msg=str(ex), exception=ex)
 
-    result["message"] = sign_result
+    result["message"] = signing_result
 
     # signing failed
-    if sign_result["signer_result"]["status"] != "ok":
-        module.fail_json(msg=sign_result["signer_result"]["error_message"], **result)
+    if signing_result["signer_result"]["status"] != "ok":
+        module.fail_json(msg=signing_result["signer_result"]["error_message"], **result)
 
     # signing successfully
     result["changed"] = True

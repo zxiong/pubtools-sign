@@ -1,5 +1,5 @@
 ===============
- pubtools-quay
+ pubtools-sign
 ===============
 
 Set of scripts used for signing 
@@ -14,6 +14,7 @@ Features
 ========
 * pubtools-sign
 * pubtools-sign-clearsign 
+* pubtools-sign-containersign 
 
 Setup
 =====

@@ -11,6 +11,7 @@ from pubtools.sign.signers.msgsigner import (
     MsgSigner,
     MsgSignerResults,
     msg_clear_sign,
+    _msg_clear_sign,
     msg_container_sign,
     ContainerSignOperation,
     ContainerSignResult,
@@ -69,14 +70,6 @@ def test_msg_clearsign_sign(f_msg_signer, f_config_msg_signer_ok):
     )
     assert result.exit_code == 0, result.output
 
-    f_msg_signer.return_value.load_config.assert_called_with(load_config(f_config_msg_signer_ok))
-    operation = ClearSignOperation(
-        inputs=["hello world"],
-        signing_key="test-signing-key",
-        task_id="1",
-    )
-    f_msg_signer.return_value.sign.assert_called_with(operation)
-
 
 def test_msg_clearsign_sign_file_input(f_msg_signer, f_config_msg_signer_ok):
     result = CliRunner().invoke(
@@ -91,8 +84,30 @@ def test_msg_clearsign_sign_file_input(f_msg_signer, f_config_msg_signer_ok):
             f"@{f_config_msg_signer_ok}",
         ],
     )
-    print(result)
     assert result.exit_code == 0, result.output
+
+
+def test__msg_clearsign_sign(f_msg_signer, f_config_msg_signer_ok):
+    _msg_clear_sign(
+        ["hello world"], signing_key="test-signing-key", task_id="1", config=f_config_msg_signer_ok
+    )
+
+    f_msg_signer.return_value.load_config.assert_called_with(load_config(f_config_msg_signer_ok))
+    operation = ClearSignOperation(
+        inputs=["hello world"],
+        signing_key="test-signing-key",
+        task_id="1",
+    )
+    f_msg_signer.return_value.sign.assert_called_with(operation)
+
+
+def test__msg_clearsign_sign_file_input(f_msg_signer, f_config_msg_signer_ok):
+    _msg_clear_sign(
+        [f"@{f_config_msg_signer_ok}"],
+        signing_key="test-signing-key",
+        task_id="1",
+        config=f_config_msg_signer_ok,
+    )
 
     f_msg_signer.return_value.load_config.assert_called_with(load_config(f_config_msg_signer_ok))
     operation = ClearSignOperation(

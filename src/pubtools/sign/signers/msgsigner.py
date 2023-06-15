@@ -355,17 +355,8 @@ def _get_config_file(config_candidate):
     return config_candidate
 
 
-@click.command()
-@click.option(
-    "--signing-key",
-    required=True,
-    help="8 characters key fingerprint of key which should be used for signing",
-)
-@click.option("--task-id", required=True, help="Task id identifier (usually pub task-id)")
-@click.option("--config", default=CONFIG_PATHS[0], help="path to the config file")
-@click.argument("inputs", nargs=-1)
-def msg_clear_sign(inputs, signing_key=None, task_id=None, config=None):
-    """Run clearsign operation with cli arguments."""
+def _msg_clear_sign(inputs, signing_key=None, task_id=None, config=None):
+    """Run clearsign operation."""
     msg_signer = MsgSigner()
     config = _get_config_file(config)
     msg_signer.load_config(load_config(os.path.expanduser(config)))
@@ -383,6 +374,20 @@ def msg_clear_sign(inputs, signing_key=None, task_id=None, config=None):
         "operation_results": signing_result.operation_result.outputs,
         "signing_key": signing_result.operation_result.signing_key,
     }
+
+
+@click.command()
+@click.option(
+    "--signing-key",
+    required=True,
+    help="8 characters key fingerprint of key which should be used for signing",
+)
+@click.option("--task-id", required=True, help="Task id identifier (usually pub task-id)")
+@click.option("--config", default=CONFIG_PATHS[0], help="path to the config file")
+@click.argument("inputs", nargs=-1)
+def msg_clear_sign(inputs, signing_key=None, task_id=None, config=None):
+    """Run clearsign operation with cli arguments."""
+    return _msg_clear_sign(inputs, signing_key=signing_key, task_id=task_id, config=config)
 
 
 @click.command()

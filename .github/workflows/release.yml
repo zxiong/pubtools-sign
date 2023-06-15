@@ -19,8 +19,23 @@ jobs:
         pip install setuptools wheel twine
     - name: Build and publish
       env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        TWINE_USERNAME: xxxxzm_2005 
+        TWINE_PASSWORD: ${{ secrets.TESTPYPI_TOKEN }}
       run: |
         python setup.py sdist bdist_wheel
-        twine upload dist/*
+        twine upload --repository testpypi dist/*
+
+  #build-appimage:
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - name: Build AppImage
+  #      uses: AppImageCrafters/build-appimage-action@master
+  #      env:
+  #        UPDATE_INFO: gh-releases-zsync|release-engineering|pubtools-sign|latest|*x86_64.AppImage.zsync
+  #        VERSION: ${{ github.ref_name }}
+  #      with:
+  #        recipe: ../../AppImageBuilder.yml
+  #    - uses: actions/upload-artifact@v3
+  #      with:
+  #        name: AppImage
+  #        path: './*.AppImage*'

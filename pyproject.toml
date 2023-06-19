@@ -62,6 +62,6 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-pubtools-sign-radas-clear-sign = "pubtools.sign.signers.radas:radas_clear_sign_main"
-pubtools-sign-radas-container-sign = "pubtools.sign.signers.radas:radas_container_sign_main"
+pubtools-sign-radas-clear-sign = "pubtools.sign.signers.msgsigner:msg_clear_sign_main"
+pubtools-sign-radas-container-sign = "pubtools.sign.signers.msgsigner:msg_container_sign_main"
 

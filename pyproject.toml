@@ -1,5 +1,5 @@
 [project]
-name = "pubtools.sign"
+name = "pubtools-sign"
 description = "Collection of tools producing signed artifacts"
 readme = "README.rst"
 requires-python = ">=3.7"
@@ -55,8 +55,8 @@ dev = [
 ]
 
 [build-system]
-build-backend = "flit_core.buildapi"
-requires = ["flit_core >=3.2,<4"]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project.scripts]
 pubtools-sign-radas-clear-sign = "pubtools.sign.signers.radas:radas_clear_sign_main"

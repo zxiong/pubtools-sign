@@ -48,6 +48,9 @@ dependencies = [
 [tool.setuptools.packages.find]
 where = ["src"]  # list of folders that contain the packages (["."] by default)
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/pubtools"]
+
 [project.optional-dependencies]
 dev = [
     "tox",

@@ -5,7 +5,7 @@ import pytest
 from ansible.module_utils import basic
 from ansible.module_utils.common.text.converters import to_bytes
 
-from pubtools.sign.ansible import clear_sign
+from pubtools.sign.ansible import msg_clear_sign
 from pubtools.sign.conf.conf import load_config
 from pubtools.sign.operations import ClearSignOperation
 from pubtools.sign.results import ClearSignResult
@@ -78,7 +78,7 @@ def test_run_module_ok(clear_sign_mock, f_config_msg_signer_ok):
 
     set_module_args(parameters)
     with pytest.raises(AnsibleExitJson) as result:
-        clear_sign.run_module()
+        msg_clear_sign.run_module()
     assert result.value.args[0]["changed"]
     assert (
         result.value.args[0]["message"]["signer_result"]
@@ -124,7 +124,7 @@ def test_run_module_failed(clear_sign_mock, f_config_msg_signer_ok):
 
     set_module_args(parameters)
     with pytest.raises(AnsibleFailJson) as result:
-        clear_sign.run_module()
+        msg_clear_sign.run_module()
     assert result.value.args[0]["failed"]
 
 
@@ -140,7 +140,7 @@ def test_run_module_exception(sign_mock, f_config_msg_signer_ok):
     }
     set_module_args(parameters)
     with pytest.raises(AnsibleFailJson) as result:
-        clear_sign.run_module()
+        msg_clear_sign.run_module()
     assert result.value.args[0]["failed"]
 
 
@@ -156,4 +156,4 @@ def test_run_module_check_mode(sign_mock, f_config_msg_signer_ok):
     }
     set_module_args(parameters)
     with pytest.raises(AnsibleExitJson):
-        clear_sign.run_module()
+        msg_clear_sign.run_module()

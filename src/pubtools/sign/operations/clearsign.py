@@ -15,11 +15,26 @@ class ClearSignOperation(SignOperation):
 
     ResultType: ClassVar[OperationResult]
     inputs: List[str] = field(
-        metadata={"description": "Signing key short id which should be used for signing"}
+        metadata={
+            "type": "list",
+            "description": "Signing data",
+            "required": "true",
+            "sample": ["input1", "input2"],
+        }
     )
     signing_key: str = field(
-        metadata={"description": "Signing key short id which should be used for signing"}
+        metadata={
+            "type": "str",
+            "description": "Signing key short id which should be used for signing",
+            "required": "true",
+            "sample": "123",
+        }
     )
     task_id: str = field(
-        metadata={"description": "Usually pub task id, serves as identifier for in signing request"}
+        metadata={
+            "type": "str",
+            "description": "Usually pub task id, serves as identifier for in signing request",
+            "required": "true",
+            "sample": "1",
+        }
     )

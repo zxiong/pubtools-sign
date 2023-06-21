@@ -4,40 +4,30 @@ from __future__ import absolute_import, division, print_function
 
 from ansible.module_utils.basic import AnsibleModule
 
+import yaml
+
+from ..results import ClearSignResult
 from ..operations.clearsign import ClearSignOperation
-from ..signers.msgsigner import _msg_clear_sign
+from ..signers.msgsigner import MsgSigner, _msg_clear_sign, MsgSignerResults
 
 __metaclass__ = type
 
-doc_arguments = ClearSignOperation.doc_arguments()
 
 DOCUMENTATION = r"""
 ---
-module: clear_sign
+module: msg_clear_sign
 version_added: "0.1"
 short_description: This is used to do clear sign
 description:
     - Sign data with clear sign.
-options:
-    inputs:
-        description: {0}.
-        required: true
-        type: list
-    signing_key:
-        description: {1}.
-        required: true
-        type: str
-    task_id:
-        description: {2}.
-        required: true
-        type: str
-    config:
-        description:
-            - Config file path.
-            - By default, it will read from "~/.config/pubtools-sign/conf.yaml" or
-              "/etc/pubtools-sign/conf.yaml"
-        required: false
-        type: str
+{0}  config:
+    description:
+      - Config file path.
+      - By default, it will read from "~/.config/pubtools-sign/conf.yaml" or
+        "/etc/pubtools-sign/conf.yaml"
+    required: false
+    type: str
+{1}
 extends_documentation_fragment:
     - action_common_attributes
 attributes:
@@ -50,58 +40,28 @@ attributes:
 author:
     - zxiong (@redhat.com)
 """.format(
-    doc_arguments.get("inputs"),
-    doc_arguments.get("signing_key"),
-    doc_arguments.get("task_id"),
+    yaml.dump({"options": ClearSignOperation.doc_arguments().get("options")}),
+    yaml.dump({"config file options": MsgSigner.doc_arguments().get("options")}),
 )
 
 EXAMPLES = r"""
-# Pass in a message
-- name: clear sign
-  clear_sign:
-    inputs:
-      - "input1"
-      - "input2"
-    signing_key: "123"
-    task_id: "1"
-    config: "/etc/pubtools-sign/conf.yaml"
-
+# Example for msg clear sign
+{0}
 The example of the config file /etc/pubtools-sign/conf.yaml:
-msg_signer:
-  messaging_brokers:
-    - amqps://broker-01:5671
-    - amqps://broker-02:5671
-  messaging_cert: {f_client_certificate}
-  messaging_ca_cert: ~/messaging/ca-cert.crt
-  topic_send_to: topic://Topic.sign
-  topic_listen_to: queue://Consumer.{{creator}}.{{task_id}}.Topic.sign.{{task_id}}
-  environment: prod
-  service: pubtools-sign
-  timeout: 1
-  retries: 3
-  message_id_key: request_id
-  log_level: debug
-"""
+{1}
+""".format(
+    yaml.dump([{"msg_clear_sign": ClearSignOperation.doc_arguments().get("examples")}]),
+    yaml.dump(MsgSigner.doc_arguments().get("examples")),
+)
 
 RETURN = r"""
 # These are examples of possible return values, and in general should use other names for return
 # values.
-signer_result:
-    description: clear sign results.
-    type: dict
-    returned: always
-    sample: {'status': 'ok', 'error_message": ''}
-operation_results:
-    description: The signing key which is used during signing.
-    type: dict
-    returned: always
-    sample: ["signed:'hello world'"]
-signing_key:
-    description: The signing key which is used during signing.
-    type: str
-    returned: always
-    sample: '123'
-"""
+{0}
+{1}
+""".format(
+    yaml.dump(MsgSignerResults.doc_arguments()), yaml.dump(ClearSignResult.doc_arguments())
+)
 
 
 def run_module():

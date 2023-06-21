@@ -46,7 +46,17 @@ class Signer(ABC):
         :return: Dict[str, Any]
         """
         doc_arguments = {}
+        options_arguments_doc = {}
+        exmaple_arguments_doc = {}
+
         for fn, fv in cls.__dataclass_fields__.items():
             if fv.metadata.get("description"):
-                doc_arguments[fn] = fv.metadata.get("description")
+                options_arguments_doc[fn] = {
+                    field: fv.metadata[field] for field in fv.metadata if field != "sample"
+                }
+                exmaple_arguments_doc[fn] = fv.metadata.get("sample", "")
+
+        doc_arguments["options"] = options_arguments_doc
+        doc_arguments["examples"] = {"msg_signer": exmaple_arguments_doc}
+
         return doc_arguments

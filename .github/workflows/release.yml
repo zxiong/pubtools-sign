@@ -35,7 +35,7 @@ jobs:
       - name: Build AppImage
         uses: AppImageCrafters/build-appimage-action@master
         env:
-          UPDATE_INFO: gh-releases-zsync|zxiong|mytools-sign|latest|*x86_64.AppImage.zsync
+          UPDATE_INFO: gh-releases-zsync|release-engineering|pubtools-sign|latest|*x86_64.AppImage.zsync
           VERSION: ${{ github.ref_name }}
         with:
           recipe: AppImageBuilder.yml

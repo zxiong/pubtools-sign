@@ -1,4 +1,4 @@
-name: Release on PyPI
+name: Release on PyPI and github
 
 on:
   release:
@@ -22,5 +22,28 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
-        python setup.py sdist bdist_wheel
+        python -m build -s --wheel
         twine upload dist/*
+
+  build-appimage:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+        contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build AppImage
+        uses: AppImageCrafters/build-appimage-action@master
+        env:
+          UPDATE_INFO: gh-releases-zsync|release-engineering|pubtools-sign|latest|*x86_64.AppImage.zsync
+          VERSION: ${{ github.ref_name }}
+        with:
+          recipe: AppImageBuilder.yml
+      - name: Upload artifact
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          imagefile1=$(ls ${{ github.workspace }}/*.AppImage |awk -F/ '{print $NF}')
+          imagefile2=$(ls ${{ github.workspace }}/*.AppImage.zsync |awk -F/ '{print $NF}')
+          gh release upload ${{ github.ref_name }} $imagefile1
+          gh release upload ${{ github.ref_name }} $imagefile2

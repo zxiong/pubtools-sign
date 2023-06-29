@@ -6,9 +6,9 @@ from ansible.module_utils.basic import AnsibleModule
 
 import yaml
 
-from ..results import ClearSignResult
-from ..operations.clearsign import ClearSignOperation
-from ..signers.msgsigner import MsgSigner, _msg_clear_sign, MsgSignerResults
+from pubtools.sign.results import ClearSignResult
+from pubtools.sign.operations.clearsign import ClearSignOperation
+from pubtools.sign.signers.msgsigner import MsgSigner, _msg_clear_sign, MsgSignerResults
 
 __metaclass__ = type
 

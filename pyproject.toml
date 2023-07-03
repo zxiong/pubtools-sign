@@ -42,7 +42,8 @@ dependencies = [
     "monotonic",
     "marshmallow",
     "pyOpenSSL",
-    "typing_extensions"
+    "typing_extensions",
+    "ansible-core"
 ]
 
 [tool.setuptools.packages.find]

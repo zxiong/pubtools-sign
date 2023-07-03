@@ -11,6 +11,7 @@ from pubtools.sign.signers.msgsigner import (
     MsgSigner,
     MsgSignerResults,
     msg_clear_sign,
+    _msg_clear_sign,
     msg_container_sign,
     ContainerSignOperation,
     ContainerSignResult,
@@ -69,14 +70,6 @@ def test_msg_clearsign_sign(f_msg_signer, f_config_msg_signer_ok):
     )
     assert result.exit_code == 0, result.output
 
-    f_msg_signer.return_value.load_config.assert_called_with(load_config(f_config_msg_signer_ok))
-    operation = ClearSignOperation(
-        inputs=["hello world"],
-        signing_key="test-signing-key",
-        task_id="1",
-    )
-    f_msg_signer.return_value.sign.assert_called_with(operation)
-
 
 def test_msg_clearsign_sign_file_input(f_msg_signer, f_config_msg_signer_ok):
     result = CliRunner().invoke(
@@ -91,8 +84,30 @@ def test_msg_clearsign_sign_file_input(f_msg_signer, f_config_msg_signer_ok):
             f"@{f_config_msg_signer_ok}",
         ],
     )
-    print(result)
     assert result.exit_code == 0, result.output
+
+
+def test__msg_clearsign_sign(f_msg_signer, f_config_msg_signer_ok):
+    _msg_clear_sign(
+        ["hello world"], signing_key="test-signing-key", task_id="1", config=f_config_msg_signer_ok
+    )
+
+    f_msg_signer.return_value.load_config.assert_called_with(load_config(f_config_msg_signer_ok))
+    operation = ClearSignOperation(
+        inputs=["hello world"],
+        signing_key="test-signing-key",
+        task_id="1",
+    )
+    f_msg_signer.return_value.sign.assert_called_with(operation)
+
+
+def test__msg_clearsign_sign_file_input(f_msg_signer, f_config_msg_signer_ok):
+    _msg_clear_sign(
+        [f"@{f_config_msg_signer_ok}"],
+        signing_key="test-signing-key",
+        task_id="1",
+        config=f_config_msg_signer_ok,
+    )
 
     f_msg_signer.return_value.load_config.assert_called_with(load_config(f_config_msg_signer_ok))
     operation = ClearSignOperation(
@@ -459,17 +474,39 @@ def test_container_sign_wrong_inputs(patched_uuid, f_config_msg_signer_ok):
 
 def test_msgsig_doc_arguments():
     assert MsgSigner.doc_arguments() == {
-        "creator": "Identification of creator of signing request",
-        "environment": "Environment indetification in sent messages",
-        "log_level": "Log level",
-        "message_id_key": "Attribute name in message body which should be used as " "message id",
-        "messaging_brokers": "List of brokers URLS",
-        "messaging_ca_cert": "Messaging CA certificate",
-        "messaging_cert": "Client certificate for messaging authorization",
-        "service": "Service identificator",
-        "timeout": "Timeout for messaging sent/receive",
-        "topic_listen_to": "Topic where to listen for replies",
-        "topic_send_to": "Topic where to send the messages",
+        "options": {
+            "messaging_brokers": {"description": "List of brokers URLS"},
+            "messaging_cert": {"description": "Client certificate for messaging authorization"},
+            "messaging_ca_cert": {"description": "Messaging CA certificate"},
+            "topic_send_to": {"description": "Topic where to send the messages"},
+            "topic_listen_to": {"description": "Topic where to listen for replies"},
+            "creator": {"description": "Identification of creator of signing request"},
+            "environment": {"description": "Environment indetification in sent messages"},
+            "service": {"description": "Service identificator"},
+            "timeout": {"description": "Timeout for messaging sent/receive"},
+            "retries": {"description": "Retries for messaging sent/receive"},
+            "message_id_key": {
+                "description": "Attribute name in message body which should be used as message id"
+            },
+            "log_level": {"description": "Log level"},
+        },
+        "examples": {
+            "msg_signer": {
+                "messaging_brokers": ["amqps://broker-01:5671", "amqps://broker-02:5671"],
+                "messaging_cert": "~/messaging/cert.crt",
+                "messaging_ca_cert": "~/messaging/ca_cert.crt",
+                "topic_send_to": "topic://Topic.sign",
+                "topic_listen_to": "queue://Consumer.{{creator}}.{{task_id}}.Topic.sign."
+                "{{task_id}}",
+                "creator": "pubtools-sign",
+                "environment": "prod",
+                "service": "pubtools-sign",
+                "timeout": 1,
+                "retries": 3,
+                "message_id_key": "123",
+                "log_level": "debug",
+            }
+        },
     }
 
 
@@ -477,4 +514,15 @@ def test_msgsigresult_to_dict():
     assert MsgSignerResults(status="status", error_message="error_message").to_dict() == {
         "status": "status",
         "error_message": "error_message",
+    }
+
+
+def test_msgsigresult_doc_arguments():
+    assert MsgSignerResults.doc_arguments() == {
+        "signer_result": {
+            "type": "dict",
+            "description": "Signing result status.",
+            "returned": "always",
+            "sample": {"status": "ok", "error_message": ""},
+        }
     }

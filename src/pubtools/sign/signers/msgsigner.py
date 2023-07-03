@@ -39,41 +39,92 @@ class MsgSignerResults(SignerResults):
         """Return dict representation of MsgSignerResults model."""
         return {"status": self.status, "error_message": self.error_message}
 
+    @classmethod
+    def doc_arguments(cls: SignerResults) -> Dict[str, Any]:
+        """Return dictionary with result description of SignerResults."""
+        doc_arguments = {
+            "signer_result": {
+                "type": "dict",
+                "description": "Signing result status.",
+                "returned": "always",
+                "sample": {"status": "ok", "error_message": ""},
+            }
+        }
+
+        return doc_arguments
+
 
 @dataclass()
 class MsgSigner(Signer):
     """Messaging signer class."""
 
     messaging_brokers: List[str] = field(
-        init=False, metadata={"description": "List of brokers URLS"}
+        init=False,
+        metadata={
+            "description": "List of brokers URLS",
+            "sample": [
+                "amqps://broker-01:5671",
+                "amqps://broker-02:5671",
+            ],
+        },
     )
     messaging_cert: str = field(
-        init=False, metadata={"description": "Client certificate for messaging authorization"}
+        init=False,
+        metadata={
+            "description": "Client certificate for messaging authorization",
+            "sample": "~/messaging/cert.crt",
+        },
     )
-    messaging_ca_cert: str = field(init=False, metadata={"description": "Messaging CA certificate"})
+    messaging_ca_cert: str = field(
+        init=False,
+        metadata={"description": "Messaging CA certificate", "sample": "~/messaging/ca_cert.crt"},
+    )
     topic_send_to: str = field(
-        init=False, metadata={"description": "Topic where to send the messages"}
+        init=False,
+        metadata={
+            "description": "Topic where to send the messages",
+            "sample": "topic://Topic.sign",
+        },
     )
     topic_listen_to: str = field(
-        init=False, metadata={"description": "Topic where to listen for replies"}
+        init=False,
+        metadata={
+            "description": "Topic where to listen for replies",
+            "sample": "queue://Consumer.{{creator}}.{{task_id}}.Topic.sign.{{task_id}}",
+        },
     )
     creator: str = field(
-        init=False, metadata={"description": "Identification of creator of signing request"}
+        init=False,
+        metadata={
+            "description": "Identification of creator of signing request",
+            "sample": "pubtools-sign",
+        },
     )
     environment: str = field(
-        init=False, metadata={"description": "Environment indetification in sent messages"}
+        init=False,
+        metadata={"description": "Environment indetification in sent messages", "sample": "prod"},
     )
-    service: str = field(init=False, metadata={"description": "Service identificator"})
+    service: str = field(
+        init=False, metadata={"description": "Service identificator", "sample": "pubtools-sign"}
+    )
     timeout: int = field(
-        init=False, default=60, metadata={"description": "Timeout for messaging sent/receive"}
+        init=False,
+        default=60,
+        metadata={"description": "Timeout for messaging sent/receive", "sample": 1},
+    )
+    retries: int = field(
+        init=False,
+        default=60,
+        metadata={"description": "Retries for messaging sent/receive", "sample": 3},
     )
     message_id_key: str = field(
         init=False,
         metadata={
-            "description": "Attribute name in message body which should be used as message id"
+            "description": "Attribute name in message body which should be used as message id",
+            "sample": "123",
         },
     )
-    log_level: str = field(init=False, metadata={"description": "Log level"})
+    log_level: str = field(init=False, metadata={"description": "Log level", "sample": "debug"})
 
     SUPPORTED_OPERATIONS: ClassVar[List[SignOperation]] = [
         ContainerSignOperation,
@@ -355,17 +406,8 @@ def _get_config_file(config_candidate):
     return config_candidate
 
 
-@click.command()
-@click.option(
-    "--signing-key",
-    required=True,
-    help="8 characters key fingerprint of key which should be used for signing",
-)
-@click.option("--task-id", required=True, help="Task id identifier (usually pub task-id)")
-@click.option("--config", default=CONFIG_PATHS[0], help="path to the config file")
-@click.argument("inputs", nargs=-1)
-def msg_clear_sign(inputs, signing_key=None, task_id=None, config=None):
-    """Run clearsign operation with cli arguments."""
+def _msg_clear_sign(inputs, signing_key=None, task_id=None, config=None):
+    """Run clearsign operation."""
     msg_signer = MsgSigner()
     config = _get_config_file(config)
     msg_signer.load_config(load_config(os.path.expanduser(config)))
@@ -383,6 +425,20 @@ def msg_clear_sign(inputs, signing_key=None, task_id=None, config=None):
         "operation_results": signing_result.operation_result.outputs,
         "signing_key": signing_result.operation_result.signing_key,
     }
+
+
+@click.command()
+@click.option(
+    "--signing-key",
+    required=True,
+    help="8 characters key fingerprint of key which should be used for signing",
+)
+@click.option("--task-id", required=True, help="Task id identifier (usually pub task-id)")
+@click.option("--config", default=CONFIG_PATHS[0], help="path to the config file")
+@click.argument("inputs", nargs=-1)
+def msg_clear_sign(inputs, signing_key=None, task_id=None, config=None):
+    """Run clearsign operation with cli arguments."""
+    return _msg_clear_sign(inputs, signing_key=signing_key, task_id=task_id, config=config)
 
 
 @click.command()

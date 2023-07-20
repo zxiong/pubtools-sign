@@ -37,7 +37,7 @@ authors = [
 dependencies = [
     "click",
     "requests",
-		"piny",
+    "piny",
     "python-qpid-proton",
     "monotonic",
     "marshmallow",
@@ -55,7 +55,7 @@ packages = ["src/pubtools"]
 [project.optional-dependencies]
 dev = [
     "tox",
-		"pytest"
+    "pytest"
 ]
 
 [build-system]

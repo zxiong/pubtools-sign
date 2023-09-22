@@ -38,3 +38,11 @@ class ClearSignOperation(SignOperation):
             "sample": "1",
         }
     )
+    repo: str = field(
+        metadata={
+            "type": "str",
+            "description": "Repository name",
+            "required": "true",
+            "sample": "repo",
+        }
+    )

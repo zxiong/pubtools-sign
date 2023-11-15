@@ -24,7 +24,7 @@ from ..clients.msg_send_client import SendClient
 from ..clients.msg_recv_client import RecvClient
 from ..models.msg import MsgMessage
 from ..conf.conf import load_config, CONFIG_PATHS
-from ..utils import set_log_level, isodate_now
+from ..utils import set_log_level, isodate_now, _get_config_file
 
 
 LOG = logging.getLogger("pubtools.sign.signers.msgsigner")
@@ -139,6 +139,8 @@ class MsgSigner(Signer):
         ContainerSignOperation,
         ClearSignOperation,
     ]
+
+    _signer_config_key: str = "msg_signer"
 
     def _construct_signing_message(
         self: MsgSigner,
@@ -359,7 +361,7 @@ class MsgSigner(Signer):
 
         signer_results = MsgSignerResults(status="ok", error_message="")
         operation_result = ContainerSignResult(
-            signing_key=operation.signing_key, signed_claims=[""] * len(operation.digests)
+            signing_key=operation.signing_key, results=[""] * len(operation.digests), failed=False
         )
         signing_results = SigningResults(
             signer=self,
@@ -410,24 +412,13 @@ class MsgSigner(Signer):
             return signing_results
 
         operation_result = ContainerSignResult(
-            signing_key=operation.signing_key, signed_claims=[""] * len(messages)
+            signing_key=operation.signing_key, results=[""] * len(messages), failed=False
         )
         for recv_id, received in recvc.recv.items():
-            operation_result.signed_claims[messages.index(message_to_data[recv_id])] = received
+            operation_result.failed = True if received[0]["msg"]["errors"] else False
+            operation_result.results[messages.index(message_to_data[recv_id])] = received
         signing_results.operation_result = operation_result
         return signing_results
-
-
-def _get_config_file(config_candidate):
-    if not os.path.exists(config_candidate):
-        for config_candidate in CONFIG_PATHS:
-            if os.path.exists(os.path.expanduser(config_candidate)):
-                break
-        else:
-            raise ValueError(
-                "No configuration file found: %s" % list(set(CONFIG_PATHS + [config_candidate]))
-            )
-    return config_candidate
 
 
 def msg_clear_sign(inputs, signing_key=None, task_id=None, config="", repo=""):
@@ -471,7 +462,7 @@ def msg_container_sign(
     signing_result = msg_signer.sign(operation)
     return {
         "signer_result": signing_result.signer_results.to_dict(),
-        "operation_results": signing_result.operation_result.signed_claims,
+        "operation_results": signing_result.operation_result.results,
         "signing_key": signing_result.operation_result.signing_key,
     }
 

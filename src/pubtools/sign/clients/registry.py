@@ -6,7 +6,7 @@ import logging
 
 from urllib.parse import urlparse, urlunparse, urlencode
 from urllib.request import parse_http_list, parse_keqv_list
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any, Union
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -51,12 +51,12 @@ class ContainerRegistryClient:
         self.username = username
         self.password = password
         self.auth_file = auth_file
-        self._session = None
+        self._session: Union[None, requests.Session] = None
         self.retries = retries
         set_log_level(LOG, log_level)
 
     @property
-    def session(self):
+    def session(self) -> requests.Session:
         """Get the session object."""
         if not self._session:
             self._session = requests.Session()
@@ -99,12 +99,13 @@ class ContainerRegistryClient:
                     .decode("utf-8")
                     .split(":")
                 )
+                auth_tuple = (auth[0], auth[1])
                 break
         else:
             raise ValueError("No authentication found")
-        return auth
+        return auth_tuple
 
-    def authenticate_to_registry(self, image_reference: str, auth_header: str) -> str:
+    def authenticate_to_registry(self, image_reference: str, auth_header: str) -> Union[str, Any]:
         """Ask for auth token based on given auth header.
 
         Args:
@@ -127,19 +128,18 @@ class ContainerRegistryClient:
         auth_url = urlunparse(unparse_parts)
         username, password = self.resolve_authentication(image_reference)
         response = self.session.get(auth_url, auth=(username, password))
-        if response.status_code == 200:
-            return response.json().get("token")
-        else:
-            response.raise_for_status()
+
+        response.raise_for_status()
+        return response.json().get("token")
 
     def check_container_image_exists(
-        self, image_reference: str, auth_token: Optional[AuthTokenWrapper] = None
+        self, image_reference: str, auth_token: AuthTokenWrapper
     ) -> Tuple[bool, str]:
         """Check if the given container image exists.
 
         Args:
             image_reference (str): Image reference to check.
-            auth_token (Optional[AuthTokenWrapper]): Authentication token.
+            auth_token (AuthTokenWrapper): Authentication token.
         Returns:
             bool: [True, ""] if the image exists, Tuple[False, <error_message>] otherwise.
         """
@@ -152,7 +152,7 @@ class ContainerRegistryClient:
         if response.status_code == 200:
             return True, ""
         elif response.status_code == 401:
-            auth_header = response.headers.get("www-authenticate")
+            auth_header = response.headers["www-authenticate"]
             auth_token.token = self.authenticate_to_registry(image_reference, auth_header)
             # Retry the original request with the token
             headers = {"Authorization": f"Bearer {auth_token.token}"}

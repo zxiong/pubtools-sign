@@ -6,7 +6,7 @@ from .signers.cosignsigner import cosign_container_sign_main
 
 
 @click.group()
-def cli():
+def cli() -> None:
     """Pubtools-sign multi command bundle."""
     pass
 

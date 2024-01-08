@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import field, dataclass
 import json
 import logging
-from typing import Dict, List, ClassVar, Any, Tuple
+from typing import Dict, List, ClassVar, Any, Tuple, Type, Union
+from typing_extensions import Self
 import os
 import sys
 
@@ -31,12 +32,12 @@ class CosignSignerResults(SignerResults):
     status: str
     error_message: str
 
-    def to_dict(self: SignerResults):
+    def to_dict(self: SignerResults) -> Dict[str, Any]:
         """Return dict representation of MsgSignerResults model."""
         return {"status": self.status, "error_message": self.error_message}
 
     @classmethod
-    def doc_arguments(cls: SignerResults) -> Dict[str, Any]:
+    def doc_arguments(cls: Type[Self]) -> Dict[str, Any]:
         """Return dictionary with result description of SignerResults."""
         doc_arguments = {
             "signer_result": {
@@ -142,13 +143,13 @@ class CosignSigner(Signer):
         default=5,
     )
 
-    SUPPORTED_OPERATIONS: ClassVar[List[SignOperation]] = [
+    SUPPORTED_OPERATIONS: ClassVar[List[Type[SignOperation]]] = [
         ContainerSignOperation,
     ]
 
     _signer_config_key: str = "cosign_signer"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Post initialization of the class."""
         set_log_level(LOG, self.log_level)
         self.container_registry_client = ContainerRegistryClient(
@@ -185,7 +186,7 @@ class CosignSigner(Signer):
             log_level=self.log_level,
         )
 
-    def operations(self: CosignSigner) -> List[SignOperation]:
+    def operations(self: CosignSigner) -> List[Type[SignOperation]]:
         """Return list of supported operations."""
         return self.SUPPORTED_OPERATIONS
 
@@ -197,12 +198,12 @@ class CosignSigner(Signer):
 
         :return: SigningResults
         """
-        if type(operation) not in self.SUPPORTED_OPERATIONS:
-            raise UnsupportedOperation(operation)
         if isinstance(operation, ContainerSignOperation):
             return self.container_sign(operation)
+        else:
+            raise UnsupportedOperation(operation)
 
-    def container_sign(self: CosignSigner, operation: ContainerSignOperation):
+    def container_sign(self: CosignSigner, operation: ContainerSignOperation) -> SigningResults:
         """Run container signing operation.
 
         :param operation: signing operation
@@ -316,7 +317,12 @@ class CosignSigner(Signer):
             return True, ""
 
 
-def cosign_container_sign(signing_key=None, config="", digest=None, reference=None):
+def cosign_container_sign(
+    signing_key: Union[str, None] = None,
+    config: str = "",
+    digest: Union[str, None] = None,
+    reference: Union[str, None] = None,
+) -> Dict[str, Any]:
     """Run containersign operation with cli arguments.
 
     Args:
@@ -331,17 +337,21 @@ def cosign_container_sign(signing_key=None, config="", digest=None, reference=No
     config = _get_config_file(config)
     cosign_signer.load_config(load_config(os.path.expanduser(config)))
 
+    # TOFIX: digest is a str, but ContainerSignOperation expects list
+    # TOFIX: reference is a str, but ContainerSignOperation expects list
+    # TOFIX: signing_key can be None, but ContainerSignOperation expects str
     operation = ContainerSignOperation(
-        digests=digest,
-        references=reference,
-        signing_key=signing_key,
+        digests=digest,  # type: ignore
+        references=reference,  # type: ignore
+        signing_key=signing_key,  # type: ignore
         task_id="",
         repo="",
     )
     signing_result = cosign_signer.sign(operation)
     return {
         "signer_result": signing_result.signer_results.to_dict(),
-        "operation_results": signing_result.operation_result.results,
+        # TOFIX: not all operation results classes contain "results". The abstraction is not correct
+        "operation_results": signing_result.operation_result.results,  # type: ignore
         "signing_key": signing_result.operation_result.signing_key,
     }
 
@@ -383,17 +393,20 @@ def cosign_list_existing_signatures(config: str, reference: str) -> Tuple[bool, 
     help="References which should be signed.",
 )
 @click.option("--raw", default=False, is_flag=True, help="Print raw output instead of json")
+# TOFIX: should raw be a boolean?
 def cosign_container_sign_main(
-    signing_key=None,
-    config=None,
-    digest=None,
-    reference=None,
-    raw=None,
-):
+    signing_key: Union[str, None] = None,
+    config: Union[str, None] = None,
+    digest: Union[str, None] = None,
+    reference: Union[str, None] = None,
+    raw: Union[bool, None] = None,
+) -> None:
     """Entry point method for containersign operation."""
+    # TOFIX: inconsistency: this method has default config value as None,
+    # cosign_container_sign has it as empty string
     ret = cosign_container_sign(
         signing_key=signing_key,
-        config=config,
+        config=config,  # type: ignore
         digest=digest,
         reference=reference,
     )

@@ -35,13 +35,13 @@ class _SendClient(_MsgClient):
         self.confirmed = 0
         self.total = len(messages)
 
-    def on_start(self, event):
+    def on_start(self, event: proton.Event) -> None:
         conn = event.container.connect(
             urls=self.broker_urls, ssl_domain=self.ssl_domain, sasl_enabled=False
         )
         self.sender = event.container.create_sender(conn)
 
-    def on_sendable(self, event):
+    def on_sendable(self, event: proton.Event) -> None:
         LOG.debug("Sender on_sendable")
         if self.sent < self.total:
             message = self.messages[self.sent]
@@ -55,14 +55,14 @@ class _SendClient(_MsgClient):
             )
             self.sent += 1
 
-    def on_accepted(self, event):
+    def on_accepted(self, event: proton.Event) -> None:
         LOG.debug("Sender accepted")
         self.confirmed += 1
         if self.confirmed == self.total:
             LOG.debug("Sender closing")
             event.connection.close()
 
-    def on_disconnected(self, event):  # pragma: no cover
+    def on_disconnected(self, event: proton.Event) -> None:  # pragma: no cover
         self.sent = self.confirmed  # pragma: no cover
 
 
@@ -99,7 +99,7 @@ class SendClient(Container):
         self._errors = errors
         super().__init__(self.handler)
 
-    def run(self):
+    def run(self) -> List[MsgError]:
         """Run the SendClient."""
         errors_len = 0
         if not len(self.messages):

@@ -1,9 +1,7 @@
-from typing import List
+from typing import List, Dict, Any, Type
 from typing_extensions import Self
 
 from .operation_result import OperationResult
-
-from typing import Dict, Any
 
 import dataclasses
 
@@ -15,12 +13,12 @@ class ClearSignResult(OperationResult):
     outputs: List[str]
     signing_key: str
 
-    def to_dict(self: Self):
+    def to_dict(self: Self) -> Dict[Any, Any]:
         """Return dict representation of ClearOperationResult."""
         return {"outputs": self.outputs, "signing_key": self.signing_key}
 
     @classmethod
-    def doc_arguments(cls: OperationResult) -> Dict[str, Any]:
+    def doc_arguments(cls: Type[Self]) -> Dict[str, Any]:
         """Return dictionary with arguments description of the operation."""
         doc_arguments = {
             "operation_results": {

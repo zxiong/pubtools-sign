@@ -5,12 +5,13 @@ from dataclasses import field, dataclass, asdict
 import enum
 import json
 import logging
-from typing import Dict, List, ClassVar, Any, Optional
+from typing import Dict, List, ClassVar, Any, Optional, Type, Union
+from typing_extensions import Self
 import uuid
 import os
 import sys
 
-import OpenSSL
+from OpenSSL import crypto
 import click
 
 from . import Signer
@@ -22,7 +23,7 @@ from ..results import SignerResults
 from ..exceptions import UnsupportedOperation
 from ..clients.msg_send_client import SendClient
 from ..clients.msg_recv_client import RecvClient
-from ..models.msg import MsgMessage
+from ..models.msg import MsgMessage, MsgError
 from ..conf.conf import load_config, CONFIG_PATHS
 from ..utils import set_log_level, isodate_now, _get_config_file
 
@@ -44,12 +45,12 @@ class MsgSignerResults(SignerResults):
     status: str
     error_message: str
 
-    def to_dict(self: SignerResults):
+    def to_dict(self: SignerResults) -> Dict[Any, Any]:
         """Return dict representation of MsgSignerResults model."""
         return {"status": self.status, "error_message": self.error_message}
 
     @classmethod
-    def doc_arguments(cls: SignerResults) -> Dict[str, Any]:
+    def doc_arguments(cls: Type[Self]) -> Dict[str, Any]:
         """Return dictionary with result description of SignerResults."""
         doc_arguments = {
             "signer_result": {
@@ -144,7 +145,7 @@ class MsgSigner(Signer):
 
     log_level: str = field(init=False, metadata={"description": "Log level", "sample": "debug"})
 
-    SUPPORTED_OPERATIONS: ClassVar[List[SignOperation]] = [
+    SUPPORTED_OPERATIONS: ClassVar[List[Type[SignOperation]]] = [
         ContainerSignOperation,
         ClearSignOperation,
     ]
@@ -153,12 +154,12 @@ class MsgSigner(Signer):
 
     def _construct_signing_message(
         self: MsgSigner,
-        claim,
+        claim: str,
         signing_key: str,
         repo: str,
-        extra_attrs: Optional[Dict] = None,
-        sig_type: SignRequestType = SignRequestType.CONTAINER,
-    ):
+        extra_attrs: Optional[Dict[str, Any]] = None,
+        sig_type: str = SignRequestType.CONTAINER,
+    ) -> dict[str, Any]:
         data_attr = "claim_file" if sig_type == SignRequestType.CONTAINER else "data"
         _extra_attrs = extra_attrs or {}
         message = {
@@ -172,7 +173,9 @@ class MsgSigner(Signer):
         message.update(_extra_attrs)
         return message
 
-    def _construct_headers(self: MsgSigner, sig_type, extra_attrs: Optional[Dict] = None):
+    def _construct_headers(
+        self: MsgSigner, sig_type: SignRequestType, extra_attrs: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         headers = {
             "service": self.service,
             "environment": self.environment,
@@ -185,8 +188,12 @@ class MsgSigner(Signer):
         return headers
 
     def _create_msg_message(
-        self: MsgSigner, data, operation: SignOperation, sig_type: SignRequestType, extra_attrs=None
-    ):
+        self: MsgSigner,
+        data: str,
+        operation: SignOperation,
+        sig_type: SignRequestType,
+        extra_attrs: Optional[Dict[str, Any]] = None,
+    ) -> MsgMessage:
         if operation.signing_key in self.key_aliases:
             signing_key = self.key_aliases[operation.signing_key]
         else:
@@ -225,13 +232,13 @@ class MsgSigner(Signer):
         self.creator = self._get_cert_subject_cn()
         self.key_aliases = config_data["msg_signer"].get("key_aliases", {})
 
-    def _get_cert_subject_cn(self):
-        x509 = OpenSSL.crypto.load_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, open(os.path.expanduser(self.messaging_cert_key)).read()
+    def _get_cert_subject_cn(self) -> str:
+        x509 = crypto.load_certificate(
+            crypto.FILETYPE_PEM, open(os.path.expanduser(self.messaging_cert_key)).read().encode()
         )
         return x509.get_subject().CN
 
-    def operations(self: MsgSigner) -> List[SignOperation]:
+    def operations(self: MsgSigner) -> List[Type[SignOperation]]:
         """Return list of supported operations."""
         return self.SUPPORTED_OPERATIONS
 
@@ -250,7 +257,7 @@ class MsgSigner(Signer):
         else:
             raise UnsupportedOperation(operation)
 
-    def clear_sign(self: MsgSigner, operation: ClearSignOperation):
+    def clear_sign(self: MsgSigner, operation: ClearSignOperation) -> SigningResults:
         """Run the clearsign operation.
 
         :param operation: signing operation
@@ -288,7 +295,7 @@ class MsgSigner(Signer):
         )
         LOG.debug(f"{len(messages)} messages to send")
 
-        errors = []
+        errors: List[MsgError] = []
         errors = SendClient(
             messages=messages,
             broker_urls=self.messaging_brokers,
@@ -336,7 +343,7 @@ class MsgSigner(Signer):
         return signing_results
 
     @staticmethod
-    def create_manifest_claim_message(signature_key, digest, reference):
+    def create_manifest_claim_message(signature_key: str, digest: str, reference: str) -> str:
         """Create manifest claim for container signing.
 
         See below for the specification for the manifest claim that is created here
@@ -352,7 +359,7 @@ class MsgSigner(Signer):
         }
         return base64.b64encode(json.dumps(manifest_claim).encode("latin1")).decode("latin1")
 
-    def container_sign(self: MsgSigner, operation: ContainerSignOperation):
+    def container_sign(self: MsgSigner, operation: ContainerSignOperation) -> SigningResults:
         """Run container signing operation.
 
         :param operation: signing operation
@@ -393,7 +400,7 @@ class MsgSigner(Signer):
         )
         LOG.debug(f"{len(messages)} messages to send")
 
-        errors = []
+        errors: List[MsgError] = []
         errors = SendClient(
             messages=messages,
             broker_urls=self.messaging_brokers,
@@ -443,7 +450,14 @@ class MsgSigner(Signer):
         return signing_results
 
 
-def msg_clear_sign(inputs, signing_key=None, task_id=None, config_file="", repo=""):
+# TOFIX: ClearSignOperation expects non-None values as its arguments, but they cna sometimes be None
+def msg_clear_sign(
+    inputs: List[str],
+    signing_key: Union[str, None] = None,
+    task_id: Union[str, None] = None,
+    config_file: str = "",
+    repo: str = "",
+) -> Dict[str, Any]:
     """Run clearsign operation."""
     msg_signer = MsgSigner()
     config = _get_config_file(config_file)
@@ -456,35 +470,43 @@ def msg_clear_sign(inputs, signing_key=None, task_id=None, config_file="", repo=
         else:
             str_inputs.append(input_)
     operation = ClearSignOperation(
-        inputs=str_inputs, signing_key=signing_key, task_id=task_id, repo=repo
+        inputs=str_inputs, signing_key=signing_key, task_id=task_id, repo=repo  # type: ignore
     )
     signing_result = msg_signer.sign(operation)
     return {
         "signer_result": signing_result.signer_results.to_dict(),
-        "operation_results": signing_result.operation_result.outputs,
+        # TOFIX: not all operation results classes contain "outputs". The abstraction is not correct
+        "operation_results": signing_result.operation_result.outputs,  # type: ignore
         "signing_key": signing_result.operation_result.signing_key,
     }
 
 
 def msg_container_sign(
-    signing_key=None, task_id=None, config_file="", digest=None, reference=None, repo=None
-):
+    signing_key: Union[str, None] = None,
+    task_id: Union[str, None] = None,
+    config_file: str = "",
+    digest: Union[str, None] = None,
+    reference: Union[str, None] = None,
+    repo: Union[str, None] = None,
+) -> Dict[str, Any]:
     """Run containersign operation with cli arguments."""
     msg_signer = MsgSigner()
     config = _get_config_file(config_file)
     msg_signer.load_config(load_config(os.path.expanduser(config)))
 
+    # TOFIX: ContainerSignOperation doesn't expect None values, but this function uses it as default
     operation = ContainerSignOperation(
-        digests=digest,
-        references=reference,
-        signing_key=signing_key,
-        task_id=task_id,
-        repo=repo,
+        digests=digest,  # type: ignore
+        references=reference,  # type: ignore
+        signing_key=signing_key,  # type: ignore
+        task_id=task_id,  # type: ignore
+        repo=repo,  # type: ignore
     )
     signing_result = msg_signer.sign(operation)
     return {
         "signer_result": signing_result.signer_results.to_dict(),
-        "operation_results": signing_result.operation_result.results,
+        # TOFIX: not all operation results classes contain "results". The abstraction is not correct
+        "operation_results": signing_result.operation_result.results,  # type: ignore
         "signing_key": signing_result.operation_result.signing_key,
     }
 
@@ -506,17 +528,34 @@ def msg_container_sign(
 )
 @click.option("--repo", help="Repository reference")
 @click.argument("inputs", nargs=-1)
+# TOFIX: inconsistency: in this function config can be None,
+#        in msg_clear_sign it's an empty string by default
+# TOFIX: should raw be a boolean? Why is it None?
 def msg_clear_sign_main(
-    inputs, signing_key=None, task_id=None, config_file=None, raw=None, log_level=None, repo=None
-):
+    inputs: List[str],
+    signing_key: Union[str, None] = None,
+    task_id: Union[str, None] = None,
+    config_file: Union[str, None] = None,
+    raw: Any = None,
+    log_level: Union[str, None] = None,
+    repo: Union[str, None] = None,
+) -> None:
     """Entry point method for clearsign operation."""
     ch = logging.StreamHandler()
-    ch.setLevel(getattr(logging, log_level))
+    # TOFIX: log_level shouldn't ever be None
+    ch.setLevel(getattr(logging, log_level))  # type: ignore
     LOG.addHandler(ch)
-    logging.basicConfig(encoding="utf-8", level=getattr(logging, log_level))
+    # TOFIX: log_level shouldn't ever be None
+    logging.basicConfig(encoding="utf-8", level=getattr(logging, log_level))  # type: ignore
 
+    # TOFIX: inconsistency: this method has default repo and config values as None,
+    # msg_clear_sign has them as empty strings
     ret = msg_clear_sign(
-        inputs, signing_key=signing_key, task_id=task_id, repo=repo, config_file=config_file
+        inputs,
+        signing_key=signing_key,
+        task_id=task_id,
+        repo=repo,  # type: ignore
+        config_file=config_file,  # type: ignore
     )
     if not raw:
         click.echo(json.dumps(ret))
@@ -567,25 +606,29 @@ def msg_clear_sign_main(
 )
 @click.option("--repo", help="Repository reference")
 def msg_container_sign_main(
-    signing_key=None,
-    task_id=None,
-    config_file=None,
-    digest=None,
-    reference=None,
-    raw=None,
-    log_level=None,
-    repo=None,
-):
+    signing_key: Union[str, None] = None,
+    task_id: Union[str, None] = None,
+    config_file: Union[str, None] = None,
+    digest: Union[str, None] = None,
+    reference: Union[str, None] = None,
+    raw: Union[bool, None] = None,
+    log_level: Union[str, None] = None,
+    repo: Union[str, None] = None,
+) -> None:
     """Entry point method for containersign operation."""
     ch = logging.StreamHandler()
-    ch.setLevel(getattr(logging, log_level))
+    # TOFIX: log_level shouldn't ever be None
+    ch.setLevel(getattr(logging, log_level))  # type: ignore
     LOG.addHandler(ch)
-    logging.basicConfig(encoding="utf-8", level=getattr(logging, log_level))
+    # TOFIX: log_level shouldn't ever be None
+    logging.basicConfig(encoding="utf-8", level=getattr(logging, log_level))  # type: ignore
 
+    # TOFIX: inconsistency: this method has default config_file value as None,
+    # msg_container_sign has it as empty string
     ret = msg_container_sign(
         signing_key=signing_key,
         task_id=task_id,
-        config_file=config_file,
+        config_file=config_file,  # type: ignore
         digest=digest,
         reference=reference,
         repo=repo,

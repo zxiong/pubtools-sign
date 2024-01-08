@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Any, List, Dict, Union
 
 from ..models.msg import MsgError
 
@@ -15,8 +16,17 @@ LOG = logging.getLogger("pubtools.sign.client.msg_recv_client")
 
 class _RecvClient(_MsgClient):
     def __init__(
-        self, topic, message_ids, id_key, broker_urls, cert, ca_cert, timeout, recv, errors
-    ):
+        self,
+        topic: str,
+        message_ids: List[str],
+        id_key: str,
+        broker_urls: List[str],
+        cert: str,
+        ca_cert: str,
+        timeout: int,
+        recv: Dict[Any, Any],
+        errors: List[MsgError],
+    ) -> None:
         super().__init__(errors=errors)
         self.broker_urls = broker_urls
         self.topic = topic
@@ -32,7 +42,7 @@ class _RecvClient(_MsgClient):
         self.recv = recv
         self.timeout = timeout
 
-    def on_start(self, event):
+    def on_start(self, event: proton.Event) -> None:
         LOG.debug("RECEIVER: On start %s %s %s", event, self.topic, self.broker_urls)
         self.timer_task = event.container.schedule(self.timeout, self)
         conn = event.container.connect(
@@ -41,7 +51,7 @@ class _RecvClient(_MsgClient):
         self.receiver = event.container.create_receiver(conn, self.topic)
         self.timer_task = event.container.schedule(self.timeout, self)
 
-    def on_message(self, event):
+    def on_message(self, event: proton.Event) -> None:
         LOG.debug("RECEIVER: On message (%s)", event)
         outer_message = json.loads(event.message.body)
         headers = event.message.properties
@@ -59,7 +69,7 @@ class _RecvClient(_MsgClient):
             event.receiver.close()
             event.connection.close()
 
-    def on_timer_task(self, event):
+    def on_timer_task(self, event: proton.Event) -> None:
         LOG.debug("RECEIVER: On timeout (%s)", event)
         self.timer_task.cancel()
         if event.connection:
@@ -80,8 +90,17 @@ class RecvClient(Container):
     """Messaging receiver."""
 
     def __init__(
-        self, topic, message_ids, id_key, broker_urls, cert, ca_cert, timeout, retries, errors
-    ):
+        self,
+        topic: str,
+        message_ids: List[str],
+        id_key: str,
+        broker_urls: List[str],
+        cert: str,
+        ca_cert: str,
+        timeout: int,
+        retries: int,
+        errors: List[MsgError],
+    ) -> None:
         """Recv Client Initializer.
 
         :param topic: Topic where to listen for incoming messages (for example topic://Topic.signed)
@@ -104,7 +123,7 @@ class RecvClient(Container):
         :type errors: List[MsgError]
         """
         self.message_ids = message_ids
-        self.recv = {}
+        self.recv: Dict[Any, Any] = {}
         self._errors = errors
         self.handler = _RecvClient(
             topic=topic,
@@ -120,7 +139,7 @@ class RecvClient(Container):
         self._retries = retries
         super().__init__(self.handler)
 
-    def run(self):
+    def run(self) -> Union[Dict[Any, Any], List[MsgError]]:
         """Run the receiver."""
         errors_len = 0
         if not len(self.message_ids):
@@ -131,7 +150,7 @@ class RecvClient(Container):
             super().run()
             if len(self._errors) == errors_len:
                 break
-            errors_len = self._errors
+            errors_len = len(self._errors)
         else:
             return self._errors
         return self.recv

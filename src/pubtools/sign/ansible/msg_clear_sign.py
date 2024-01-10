@@ -64,7 +64,7 @@ RETURN = r"""
 )
 
 
-def run_module():
+def run_module() -> None:
     """Run clearsign module."""
     # Define available arguments/parameters a user can pass to the module
     module_args = dict(

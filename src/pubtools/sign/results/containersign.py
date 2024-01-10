@@ -1,7 +1,7 @@
 from __future__ import annotations
 import dataclasses
 
-from typing import List, ClassVar
+from typing import List, ClassVar, Any, Dict
 from typing_extensions import Self
 
 from ..results.operation_result import OperationResult
@@ -16,6 +16,6 @@ class ContainerSignResult(OperationResult):
     signing_key: str
     failed: bool
 
-    def to_dict(self: Self):
+    def to_dict(self: Self) -> Dict[Any, Any]:
         """Return dict representation of ContainerOperationResult."""
         return {"results": self.results, "signing_key": self.signing_key, "failed": self.failed}

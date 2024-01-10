@@ -1,11 +1,13 @@
 import datetime
 import subprocess
 import os
+import logging
+from typing import Any, Dict, List, Union
 
 from .conf.conf import CONFIG_PATHS
 
 
-def set_log_level(logger, level):
+def set_log_level(logger: logging.Logger, level: str) -> None:
     """Set log level for provided logger.
 
     :param logger: logger
@@ -18,7 +20,7 @@ def set_log_level(logger, level):
     logger.setLevel(level.upper())
 
 
-def isodate_now():
+def isodate_now() -> str:
     """Return current datetime in ISO-8601.
 
     :return: str
@@ -26,7 +28,7 @@ def isodate_now():
     return datetime.datetime.utcnow().isoformat() + "Z"
 
 
-def run_command(cmd, env=None):
+def run_command(cmd: List[str], env: Union[Dict[str, Any], None] = None) -> Any:
     """Run external command and return Process instance."""
     process = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
@@ -34,7 +36,7 @@ def run_command(cmd, env=None):
     return process
 
 
-def _get_config_file(config_candidate):
+def _get_config_file(config_candidate: str) -> str:
     if not os.path.exists(config_candidate):
         for config_candidate in CONFIG_PATHS:
             if os.path.exists(os.path.expanduser(config_candidate)):

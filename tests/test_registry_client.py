@@ -21,7 +21,7 @@ def mocked_auth_config_files():
 def test_resolve_authentication(mocked_auth_config_files):
     client = ContainerRegistryClient()
     auth = client.resolve_authentication("registry.example.com/foo/bar:latest")
-    assert auth == ["username", "password"]
+    assert auth == ("username", "password")
 
 
 def test_authenticate_to_registry(mocked_auth_config_files):

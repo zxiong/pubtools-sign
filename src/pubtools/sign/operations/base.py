@@ -3,7 +3,8 @@ from __future__ import annotations
 from abc import ABC
 
 from dataclasses import dataclass
-from typing import ClassVar, Dict, Any
+from typing import ClassVar, Dict, Any, Type
+from typing_extensions import Self
 
 from ..results.operation_result import OperationResult
 
@@ -13,9 +14,11 @@ class SignOperation(ABC):
     """SignOperation Abstract class."""
 
     ResultType: ClassVar[OperationResult]
+    signing_key: str
+    repo: str
 
     @classmethod
-    def doc_arguments(cls: SignOperation) -> Dict[str, Any]:
+    def doc_arguments(cls: Type[Self]) -> Dict[str, Any]:
         """Return dictionary with arguments description of the operation."""
         doc_arguments = {}
         options_arguments_doc = {}

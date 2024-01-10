@@ -1,3 +1,5 @@
+from typing import Any
+
 import marshmallow as ma
 from piny import MarshmallowValidator, StrictMatcher, YamlLoader
 
@@ -45,13 +47,13 @@ class ConfigSchema(ma.Schema):
     cosign_signer = ma.fields.Nested(CosignSignerSchema)
 
 
-def load_config(fname: str):
+def load_config(fname: str) -> Any:
     """Load configuration from a filename.
 
     :param fname: filename
     :type fname: str
 
-    :return Dict[str, Any]:
+    :return Any:
     """
     config = YamlLoader(
         path=fname,

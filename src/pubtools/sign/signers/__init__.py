@@ -1,7 +1,8 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 import dataclasses
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Type
+from typing_extensions import Self
 
 from ..results.signing_results import SigningResults
 from ..operations.base import SignOperation
@@ -21,7 +22,7 @@ class Signer(ABC):
         ...  # pragma: no cover
 
     @abstractmethod
-    def operations(self: Signer) -> List[SignOperation]:
+    def operations(self: Signer) -> List[Type[SignOperation]]:
         """Return list of operations supported by the Signer.
 
         :return: List[SignOperation]
@@ -42,7 +43,7 @@ class Signer(ABC):
     _signer_config_key: str = "cosign_signer"
 
     @classmethod
-    def doc_arguments(cls: Signer) -> Dict[str, Any]:
+    def doc_arguments(cls: Type[Self]) -> Dict[str, Any]:
         """Return dict with arguments decription for the signer.
 
         :return: Dict[str, Any]

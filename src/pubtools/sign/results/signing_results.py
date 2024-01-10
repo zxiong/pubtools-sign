@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import dataclasses
 
-from typing import ForwardRef
+from typing import TYPE_CHECKING
 
 from pubtools.sign.operations.base import SignOperation
 from pubtools.sign.results import SignerResults
 from pubtools.sign.results.operation_result import OperationResult
 
-
-Signer = ForwardRef("Signer")
+if TYPE_CHECKING:  # pragma: no cover
+    from pubtools.sign.signers import Signer
 
 
 @dataclasses.dataclass

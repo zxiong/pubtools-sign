@@ -319,7 +319,7 @@ class CosignSigner(Signer):
 
 def cosign_container_sign(
     signing_key: str = "",
-    config: str = "",
+    config_file: str = "",
     digest: List[str] = [],
     reference: List[str] = [],
 ) -> Dict[str, Any]:
@@ -327,14 +327,14 @@ def cosign_container_sign(
 
     Args:
         signing_key (str): path to the signing key
-        config (str): path to the config file
+        config_file (str): path to the config file
         digest (str): digest of the image to sign
         reference (str): reference of the image to sign
     Returns:
         dict: signing result
     """
     cosign_signer = CosignSigner()
-    config = _get_config_file(config)
+    config = _get_config_file(config_file)
     cosign_signer.load_config(load_config(os.path.expanduser(config)))
 
     operation = ContainerSignOperation(
@@ -352,17 +352,17 @@ def cosign_container_sign(
     }
 
 
-def cosign_list_existing_signatures(config: str, reference: str) -> Tuple[bool, str]:
+def cosign_list_existing_signatures(config_file: str, reference: str) -> Tuple[bool, str]:
     """List existing signatures for given reference.
 
     Args:
-        config (str): path to the config file
+        config_file (str): path to the config file
         reference (str): reference to get list of signatures for
     Returns:
         Tuple[bool, str]: tuple of success flag and error message or result string
     """
     cosign_signer = CosignSigner()
-    config = _get_config_file(config)
+    config = _get_config_file(config_file)
     cosign_signer.load_config(load_config(os.path.expanduser(config)))
     return cosign_signer.existing_signatures(reference)
 
@@ -373,7 +373,7 @@ def cosign_list_existing_signatures(config: str, reference: str) -> Tuple[bool, 
     required=True,
     help="signing key used by cosign.",
 )
-@click.option("--config", default=CONFIG_PATHS[0], help="path to the config file")
+@click.option("--config-file", default=CONFIG_PATHS[0], help="path to the config file")
 @click.option(
     "--digest",
     required=True,
@@ -391,7 +391,7 @@ def cosign_list_existing_signatures(config: str, reference: str) -> Tuple[bool, 
 @click.option("--raw", default=False, is_flag=True, help="Print raw output instead of json")
 def cosign_container_sign_main(
     signing_key: str = "",
-    config: str = "",
+    config_file: str = "",
     digest: List[str] = [],
     reference: List[str] = [],
     raw: bool = False,
@@ -399,7 +399,7 @@ def cosign_container_sign_main(
     """Entry point method for containersign operation."""
     ret = cosign_container_sign(
         signing_key=signing_key,
-        config=config,
+        config_file=config_file,
         digest=digest,
         reference=reference,
     )

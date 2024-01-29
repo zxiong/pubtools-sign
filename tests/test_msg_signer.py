@@ -355,7 +355,7 @@ def test__construct_signing_message(f_config_msg_signer_ok):
             patched_date.return_value = "created-date-Z"
             ret = signer._construct_signing_message("some-claim", "some-signing-key", "repo", {})
             assert ret == {
-                "sig_key_id": "some-signing-key",
+                "sig_key_id": "ning-key",
                 "claim_file": "some-claim",
                 "request_id": "1234-5678-abcd-efgh",
                 "created": "created-date-Z",

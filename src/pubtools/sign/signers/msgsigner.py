@@ -163,7 +163,7 @@ class MsgSigner(Signer):
         data_attr = "claim_file" if sig_type == SignRequestType.CONTAINER else "data"
         _extra_attrs = extra_attrs or {}
         message = {
-            "sig_key_id": signing_key,
+            "sig_key_id": signing_key[-8:],
             data_attr: claim,
             "request_id": str(uuid.uuid4()),
             "created": isodate_now(),

@@ -120,12 +120,17 @@ class MsgSigner(Signer):
     timeout: int = field(
         init=False,
         default=60,
-        metadata={"description": "Timeout for messaging sent/receive", "sample": 1},
+        metadata={"description": "Timeout for messaging receive", "sample": 1},
     )
     retries: int = field(
         init=False,
-        default=60,
-        metadata={"description": "Retries for messaging sent/receive", "sample": 3},
+        default=3,
+        metadata={"description": "Retries for messaging receive", "sample": 3},
+    )
+    send_retries: int = field(
+        init=False,
+        default=2,
+        metadata={"description": "Retries for messaging send+receive", "sample": 2},
     )
     message_id_key: str = field(
         init=False,
@@ -227,6 +232,7 @@ class MsgSigner(Signer):
         self.service = config_data["msg_signer"]["service"]
         self.message_id_key = config_data["msg_signer"]["message_id_key"]
         self.retries = config_data["msg_signer"]["retries"]
+        self.send_retries = config_data["msg_signer"]["send_retries"]
         self.log_level = config_data["msg_signer"]["log_level"]
         self.timeout = config_data["msg_signer"]["timeout"]
         self.creator = self._get_cert_subject_cn()
@@ -278,6 +284,8 @@ class MsgSigner(Signer):
             message_to_data[message.body["request_id"]] = message
             messages.append(message)
 
+        all_messages = [x for x in messages]
+
         signing_key = operation.signing_key
         if signing_key in self.key_aliases:
             signing_key = self.key_aliases[signing_key]
@@ -293,57 +301,73 @@ class MsgSigner(Signer):
             signer_results=signer_results,
             operation_result=operation_result,
         )
-        LOG.debug(f"{len(messages)} messages to send")
-
         errors: List[MsgError] = []
-        message_ids = [message.body["request_id"] for message in messages]
+        received: Dict[int, Any] = {}
 
-        recvc = RecvClient(
-            message_ids=message_ids,
-            topic=self.topic_listen_to.format(
-                **dict(list(asdict(self).items()) + list(asdict(operation).items()))
-            ),
-            id_key=self.message_id_key,
-            broker_urls=self.messaging_brokers,
-            cert=self.messaging_cert_key,
-            ca_cert=self.messaging_ca_cert,
-            timeout=self.timeout,
-            retries=self.retries,
-            errors=errors,
-        )
-        recvt = RecvThread(recvc)
-        recvt.start()
+        for i in range(self.send_retries):
+            message_ids = [message.body["request_id"] for message in messages]
+            LOG.debug(f"{len(messages)} messages to send")
+            recvc = RecvClient(
+                message_ids=message_ids,
+                topic=self.topic_listen_to.format(
+                    **dict(list(asdict(self).items()) + list(asdict(operation).items()))
+                ),
+                id_key=self.message_id_key,
+                broker_urls=self.messaging_brokers,
+                cert=self.messaging_cert_key,
+                ca_cert=self.messaging_ca_cert,
+                timeout=self.timeout,
+                retries=self.retries,
+                errors=errors,
+                received=received,
+            )
+            recvt = RecvThread(recvc)
+            recvt.start()
 
-        errors = SendClient(
-            messages=messages,
-            broker_urls=self.messaging_brokers,
-            cert=self.messaging_cert_key,
-            ca_cert=self.messaging_ca_cert,
-            retries=self.retries,
-            errors=errors,
-        ).run()
+            errors = SendClient(
+                messages=messages,
+                broker_urls=self.messaging_brokers,
+                cert=self.messaging_cert_key,
+                ca_cert=self.messaging_ca_cert,
+                retries=self.retries,
+                errors=errors,
+            ).run()
+            # check sender errors
+            if errors:
+                signer_results.status = "error"
+                for error in errors:
+                    signer_results.error_message += f"{error.name} : {error.description}\n"
+                return signing_results
 
-        if errors:
-            signer_results.status = "error"
-            for error in errors:
-                signer_results.error_message += f"{error.name} : {error.description}\n"
-            return signing_results
+            # wait for receiver to finish
+            recvt.join()
 
-        recvt.join()
+            # check receiver errors
+            errors = recvc._errors
+            if errors and errors[0].name == "MessagingTimeout":
+                _messages = []
+                for message in messages:
+                    if message.body["request_id"] not in received:
+                        _messages.append(message)
+                messages = _messages
+
+            elif not errors:
+                break
 
         errors = recvc._errors
         if errors:
-            signer_results.status = "error"
-            for error in errors:
-                signer_results.error_message += f"{error.name} : {error.description}\n"
-            return signing_results
+            if errors:
+                signer_results.status = "error"
+                for error in errors:
+                    signer_results.error_message += f"{error.name} : {error.description}\n"
+                return signing_results
 
         operation_result = ClearSignResult(
-            signing_key=operation.signing_key, outputs=[""] * len(messages)
+            signing_key=operation.signing_key, outputs=[""] * len(all_messages)
         )
 
-        for recv_id, received in recvc.recv.items():
-            operation_result.outputs[messages.index(message_to_data[recv_id])] = received
+        for recv_id, _received in recvc.recv.items():
+            operation_result.outputs[all_messages.index(message_to_data[recv_id])] = _received
         signing_results.operation_result = operation_result
         return signing_results
 
@@ -393,6 +417,8 @@ class MsgSigner(Signer):
             message_to_data[message.body["request_id"]] = message
             messages.append(message)
 
+        all_messages = [x for x in messages]
+
         signer_results = MsgSignerResults(status="ok", error_message="")
         operation_result = ContainerSignResult(
             signing_key=operation.signing_key, results=[""] * len(operation.digests), failed=False
@@ -406,41 +432,57 @@ class MsgSigner(Signer):
         LOG.debug(f"{len(messages)} messages to send")
 
         errors: List[MsgError] = []
+        received: Dict[int, Any] = {}
 
-        message_ids = [message.body["request_id"] for message in messages]
-        recvc = RecvClient(
-            message_ids=message_ids,
-            topic=self.topic_listen_to.format(
-                **dict(list(asdict(self).items()) + list(asdict(operation).items()))
-            ),
-            id_key=self.message_id_key,
-            broker_urls=self.messaging_brokers,
-            cert=self.messaging_cert_key,
-            ca_cert=self.messaging_ca_cert,
-            timeout=self.timeout,
-            retries=self.retries,
-            errors=errors,
-        )
-        recvt = RecvThread(recvc)
-        recvt.start()
+        for i in range(self.retries):
+            message_ids = [message.body["request_id"] for message in messages]
+            recvc = RecvClient(
+                message_ids=message_ids,
+                topic=self.topic_listen_to.format(
+                    **dict(list(asdict(self).items()) + list(asdict(operation).items()))
+                ),
+                id_key=self.message_id_key,
+                broker_urls=self.messaging_brokers,
+                cert=self.messaging_cert_key,
+                ca_cert=self.messaging_ca_cert,
+                timeout=self.timeout,
+                retries=self.retries,
+                errors=errors,
+                received=received,
+            )
+            recvt = RecvThread(recvc)
+            recvt.start()
 
-        errors = SendClient(
-            messages=messages,
-            broker_urls=self.messaging_brokers,
-            cert=self.messaging_cert_key,
-            ca_cert=self.messaging_ca_cert,
-            retries=self.retries,
-            errors=errors,
-        ).run()
+            errors = SendClient(
+                messages=messages,
+                broker_urls=self.messaging_brokers,
+                cert=self.messaging_cert_key,
+                ca_cert=self.messaging_ca_cert,
+                retries=self.retries,
+                errors=errors,
+            ).run()
 
-        if errors:
-            signer_results.status = "error"
-            for error in errors:
-                signer_results.error_message += f"{error.name} : {error.description}\n"
-            return signing_results
+            # check sender errors
+            if errors:
+                signer_results.status = "error"
+                for error in errors:
+                    signer_results.error_message += f"{error.name} : {error.description}\n"
+                return signing_results
 
-        # wait for receiver to finish
-        recvt.join()
+            # wait for receiver to finish
+            recvt.join()
+
+            # check receiver errors
+            errors = recvc._errors
+            if errors and errors[0].name == "MessagingTimeout":
+                _messages = []
+                for message in messages:
+                    if message.body["request_id"] not in received:
+                        _messages.append(message)
+                messages = _messages
+
+            elif not errors:
+                break
 
         errors = recvc._errors
         if errors:
@@ -450,11 +492,11 @@ class MsgSigner(Signer):
             return signing_results
 
         operation_result = ContainerSignResult(
-            signing_key=operation.signing_key, results=[""] * len(messages), failed=False
+            signing_key=operation.signing_key, results=[""] * len(all_messages), failed=False
         )
-        for recv_id, received in recvc.recv.items():
-            operation_result.failed = True if received[0]["msg"]["errors"] else False
-            operation_result.results[messages.index(message_to_data[recv_id])] = received
+        for recv_id, _received in recvc.recv.items():
+            operation_result.failed = True if _received[0]["msg"]["errors"] else False
+            operation_result.results[all_messages.index(message_to_data[recv_id])] = _received
         signing_results.operation_result = operation_result
         return signing_results
 

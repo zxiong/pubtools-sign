@@ -109,6 +109,7 @@ class RecvClient(Container):
         timeout: int,
         retries: int,
         errors: List[MsgError],
+        received: Dict[Any, Any],
     ) -> None:
         """Recv Client Initializer.
 
@@ -130,9 +131,11 @@ class RecvClient(Container):
         :type retries: int
         :param errors: List of errors which occured during the process
         :type errors: List[MsgError]
+        :param received: Mapping of received messages
+        :type errors: Dict[int, Any]
         """
         self.message_ids = message_ids
-        self.recv: Dict[Any, Any] = {}
+        self.recv: Dict[Any, Any] = received
         self._errors = errors
         self.topic = topic
         self.message_ids = message_ids

@@ -480,6 +480,7 @@ class MsgSigner(Signer):
                     if message.body["request_id"] not in received:
                         _messages.append(message)
                 messages = _messages
+                LOG.info("Messaging timeout, %s signatures left to be processed", len(messages))
 
             elif not errors:
                 break

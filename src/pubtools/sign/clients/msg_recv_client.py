@@ -42,6 +42,7 @@ class _RecvClient(_MsgClient):
         self.confirmed = 0
         self.recv = recv
         self.timeout = timeout
+        LOG.info("Expected to receive %s messages", len(message_ids))
 
     def on_start(self, event: proton.Event) -> None:
         LOG.debug("RECEIVER: On start %s %s %s", event, self.topic, self.broker_urls)

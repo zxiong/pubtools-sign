@@ -868,7 +868,17 @@ def test_clear_sign_recv_timeout(patched_uuid, f_config_msg_signer_ok):
                     name="MessagingTimeout",
                     description="Out of time when receiving messages",
                     source="test-source",
-                )
+                ),
+                MsgError(
+                    name="MessagingTimeout",
+                    description="Out of time when receiving messages",
+                    source="test-source",
+                ),
+                MsgError(
+                    name="MessagingTimeout",
+                    description="Out of time when receiving messages",
+                    source="test-source",
+                ),
             ]
             patched_recv_client.return_value.recv = {"1234-5678-abcd-efgh": "signed:'hello world'"}
 
@@ -881,7 +891,8 @@ def test_clear_sign_recv_timeout(patched_uuid, f_config_msg_signer_ok):
                 operation=clear_sign_operation,
                 signer_results=MsgSignerResults(
                     status="error",
-                    error_message="MessagingTimeout : Out of time when receiving messages\n",
+                    error_message="MessagingTimeout : Out of time when receiving messages\n"
+                    "MessagingTimeout : Out of time when receiving messages\n",
                 ),
                 operation_result=ClearSignResult(outputs=[""], signing_key="test-signing-key"),
             )

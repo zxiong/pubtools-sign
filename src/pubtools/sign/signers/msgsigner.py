@@ -351,6 +351,8 @@ class MsgSigner(Signer):
                 for message in messages:
                     if message.body["request_id"] not in received:
                         _messages.append(message)
+                if i != self.send_retries - 1:
+                    errors.pop(0)
                 messages = _messages
 
             elif not errors:

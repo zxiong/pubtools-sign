@@ -195,6 +195,7 @@ class MsgSigner(Signer):
     def _create_msg_message(
         self: MsgSigner,
         data: str,
+        repo: str,
         operation: SignOperation,
         sig_type: SignRequestType,
         extra_attrs: Optional[Dict[str, Any]] = None,
@@ -208,7 +209,7 @@ class MsgSigner(Signer):
             body=self._construct_signing_message(
                 data,
                 signing_key,
-                repo=operation.repo,
+                repo,
                 extra_attrs=extra_attrs,
                 sig_type=sig_type.value,
             ),
@@ -277,6 +278,7 @@ class MsgSigner(Signer):
         for in_data in operation.inputs:
             message = self._create_msg_message(
                 base64.b64encode(in_data.encode("latin1")).decode("latin-1"),
+                operation.repo,
                 operation,
                 SignRequestType.CLEARSIGN,
                 extra_attrs={"pub_task_id": operation.task_id},
@@ -408,8 +410,10 @@ class MsgSigner(Signer):
             LOG.info(f"Using signing key alias {signing_key} for {operation.signing_key}")
 
         for digest, reference in zip(operation.digests, operation.references):
+            repo = reference.split(":")[0].split("/", 1)[1].split(":")[0]
             message = self._create_msg_message(
                 self.create_manifest_claim_message(signing_key, digest=digest, reference=reference),
+                repo,
                 operation,
                 SignRequestType.CONTAINER,
                 extra_attrs={"pub_task_id": operation.task_id, "manifest_digest": digest},
@@ -538,7 +542,6 @@ def msg_container_sign(
     config_file: str = "",
     digest: list[str] = [],
     reference: list[str] = [],
-    repo: str = "",
 ) -> Dict[str, Any]:
     """Run containersign operation with cli arguments."""
     msg_signer = MsgSigner()
@@ -550,7 +553,6 @@ def msg_container_sign(
         references=reference,
         signing_key=signing_key,
         task_id=task_id,
-        repo=repo,
     )
     signing_result = msg_signer.sign(operation)
     return {
@@ -648,7 +650,6 @@ def msg_clear_sign_main(
     default="INFO",
     help="Set log level",
 )
-@click.option("--repo", help="Repository reference")
 def msg_container_sign_main(
     signing_key: str = "",
     task_id: str = "",
@@ -657,7 +658,6 @@ def msg_container_sign_main(
     reference: List[str] = [],
     raw: bool = False,
     log_level: str = "INFO",
-    repo: str = "",
 ) -> None:
     """Entry point method for containersign operation."""
     ch = logging.StreamHandler()
@@ -671,7 +671,6 @@ def msg_container_sign_main(
         config_file=config_file,
         digest=digest,
         reference=reference,
-        repo=repo,
     )
     if not raw:
         click.echo(json.dumps(ret))

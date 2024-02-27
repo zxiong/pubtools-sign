@@ -400,7 +400,7 @@ def test_create_msg_message(f_config_msg_signer_ok):
                 inputs=["test-data-inputs"], signing_key="test-key", task_id="1", repo="repo"
             )
             assert signer._create_msg_message(
-                data, operation, SignRequestType.CONTAINER
+                data, "repo", operation, SignRequestType.CONTAINER
             ) == MsgMessage(
                 headers={
                     "service": "pubtools-sign",
@@ -420,7 +420,7 @@ def test_create_msg_message(f_config_msg_signer_ok):
                 },
             )
             assert signer._create_msg_message(
-                data, operation, SignRequestType.CLEARSIGN
+                data, "repo", operation, SignRequestType.CLEARSIGN
             ) == MsgMessage(
                 headers={
                     "service": "pubtools-sign",
@@ -449,7 +449,6 @@ def test_sign(f_config_msg_signer_ok):
         references=("some-reference",),
         signing_key="test-signing-key",
         task_id="1",
-        repo="repo",
     )
     clear_sign_operation = ClearSignOperation(
         inputs=["hello world"], signing_key="test-signing-key", task_id="1", repo="repo"
@@ -538,7 +537,7 @@ def test_clear_sign_aliases(patched_uuid, f_config_msg_signer_aliases):
                 patch_construct_signing_message.assert_called_once_with(
                     "aGVsbG8gd29ybGQ=",
                     "abcde1245",
-                    repo="repo",
+                    "repo",
                     extra_attrs={"pub_task_id": "1"},
                     sig_type="clearsign_signature",
                 )
@@ -619,7 +618,6 @@ def test_container_sign(patched_uuid, f_config_msg_signer_ok, f_client_certifica
         digests=["sha256:abcdefg"],
         references=["some-registry/namespace/repo:tag"],
         signing_key="test-signing-key",
-        repo="repo",
     )
 
     with patch("pubtools.sign.signers.msgsigner.SendClient") as patched_send_client:
@@ -671,7 +669,6 @@ def test_container_sign_alias(patched_uuid, f_config_msg_signer_aliases, f_clien
         digests=["sha256:abcdefg"],
         references=["some-registry/namespace/repo:tag"],
         signing_key="beta",
-        repo="repo",
     )
 
     with patch("pubtools.sign.signers.msgsigner.SendClient") as patched_send_client:
@@ -699,7 +696,7 @@ def test_container_sign_alias(patched_uuid, f_config_msg_signer_aliases, f_clien
                 patch_construct_signing_message.assert_called_once_with(
                     ANY,
                     "abcde1245",
-                    repo="repo",
+                    "namespace/repo",
                     extra_attrs={"pub_task_id": "1", "manifest_digest": "sha256:abcdefg"},
                     sig_type="container_signature",
                 )
@@ -737,7 +734,6 @@ def test_container_sign_recv_errors(patched_uuid, f_config_msg_signer_ok):
         digests=["sha256:abcdefg"],
         references=["some-registry/namespace/repo:tag"],
         signing_key="test-signing-key",
-        repo="repo",
     )
 
     with patch("pubtools.sign.signers.msgsigner.SendClient") as patched_send_client:
@@ -773,7 +769,6 @@ def test_container_sign_send_errors(patched_uuid, f_config_msg_signer_ok):
         digests=["sha256:abcdefg"],
         references=["some-registry/namespace/repo:tag"],
         signing_key="test-signing-key",
-        repo="repo",
     )
     with patch("pubtools.sign.signers.msgsigner.SendClient") as patched_send_client:
         with patch("pubtools.sign.signers.msgsigner.RecvClient") as patched_recv_client:
@@ -808,7 +803,6 @@ def test_container_sign_wrong_inputs(patched_uuid, f_config_msg_signer_ok):
         digests=["sha256:abcdefg"],
         references=["some-registry/namespace/repo:tag", "some-registry/namespace/repo:tag2"],
         signing_key="test-signing-key",
-        repo="repo",
     )
 
     signer = MsgSigner()
@@ -824,7 +818,6 @@ def test_container_sign_recv_timeout(patched_uuid, f_config_msg_signer_ok):
         digests=["sha256:abcdefg"],
         references=["some-registry/namespace/repo:tag"],
         signing_key="test-signing-key",
-        repo="repo",
     )
 
     with patch("pubtools.sign.signers.msgsigner.SendClient") as patched_send_client:

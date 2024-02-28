@@ -487,6 +487,8 @@ class MsgSigner(Signer):
                         _messages.append(message)
                 messages = _messages
                 LOG.info("Messaging timeout, %s signatures left to be processed", len(messages))
+                if not len(messages):
+                    break
 
             elif not errors:
                 break

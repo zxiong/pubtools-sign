@@ -70,6 +70,7 @@ class _RecvClient(_MsgClient):
             self.timer_task.cancel()
             event.receiver.close()
             event.connection.close()
+        event.container.stop()
         self.recv_in_time = True
 
     def on_timer_task(self, event: proton.Event) -> None:
@@ -78,7 +79,9 @@ class _RecvClient(_MsgClient):
             self.recv_in_time = False
             self.timer_task = event.container.schedule(self.timeout, self)
             return
-        LOG.debug("RECEIVER: On timeout (%s)", event)
+        LOG.info("[%d] RECEIVER: On timeout (%s) messages: %d/%d",
+                  threading.get_ident(), event, 
+                  len([x for x in self.recv_ids.values() if x]), len(self.recv_ids))
         self.timer_task.cancel()
         if event.connection:
             event.connection.close()  # pragma: no cover
@@ -86,13 +89,15 @@ class _RecvClient(_MsgClient):
             event.receiver.close()  # pragma: no cover
         event.container.stop()
 
-        self.errors.append(
-            MsgError(
-                source=event,
-                name="MessagingTimeout",
-                description="Out of time when receiving messages",
+        if not all(self.recv_ids.values()):
+            self.errors.append(
+                MsgError(
+                    source=event,
+                    name="MessagingTimeout",
+                    description="Out of time when receiving messages (%d/%d)" % (
+                            len([x for x in self.recv_ids.values() if x]), len(self.recv_ids))
+                )
             )
-        )
 
     def close(self) -> None:
         if hasattr(self, "timer_task"):
@@ -189,6 +194,8 @@ class RecvClient(Container):
                 recv=self.recv,
                 errors=self._errors,
             )
+            if self._errors and self._errors[0].name == "MessagingTimeout" and x+1 < self._retries:
+                self._errors.pop(0)
             super().__init__(recv)
         else:
             return self._errors

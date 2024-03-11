@@ -10,6 +10,7 @@ from typing_extensions import Self
 import uuid
 import os
 import sys
+import threading
 
 from OpenSSL import crypto
 import click
@@ -119,7 +120,7 @@ class MsgSigner(Signer):
     )
     timeout: int = field(
         init=False,
-        default=60,
+        default=120,
         metadata={"description": "Timeout for messaging receive", "sample": 1},
     )
     retries: int = field(
@@ -481,12 +482,18 @@ class MsgSigner(Signer):
             # check receiver errors
             errors = recvc._errors
             if errors and errors[0].name == "MessagingTimeout":
+                if i+1 < self.retries:
+                    errors.pop(0)
                 _messages = []
                 for message in messages:
                     if message.body["request_id"] not in received:
                         _messages.append(message)
+                    else:
+                        LOG.info("[%d] Filtering 1 message %s",
+                                 threading.get_ident(), message.body["request_id"])
                 messages = _messages
-                LOG.info("Messaging timeout, %s signatures left to be processed", len(messages))
+                LOG.info("[%d] Messaging timeout, %s signatures left to be processed. retries: (%d/%d)",
+                         threading.get_ident(), len(messages), i, self.retries)
                 if not len(messages):
                     break
 

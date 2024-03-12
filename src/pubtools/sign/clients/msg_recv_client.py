@@ -70,12 +70,13 @@ class _RecvClient(_MsgClient):
             self.timer_task.cancel()
             event.receiver.close()
             event.connection.close()
-        event.container.stop()
+            event.container.stop()
+            LOG.info("ALL MESSAGES RECEIVED")
         self.recv_in_time = True
 
     def on_timer_task(self, event: proton.Event) -> None:
         if self.recv_in_time:
-            LOG.debug("RECEIVER: On timeout but messages was received - continue")
+            LOG.info("RECEIVER: On timeout but messages was received - continue")
             self.recv_in_time = False
             self.timer_task = event.container.schedule(self.timeout, self)
             return

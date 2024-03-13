@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import threading
@@ -18,6 +19,7 @@ LOG = logging.getLogger("pubtools.sign.client.msg_recv_client")
 class _RecvClient(_MsgClient):
     def __init__(
         self,
+        uid: str,
         topic: str,
         message_ids: List[str],
         id_key: str,
@@ -43,6 +45,8 @@ class _RecvClient(_MsgClient):
         self.recv = recv
         self.timeout = timeout
         self.recv_in_time = False
+        self.uid = uid
+        self.last_message_received = datetime.datetime.now()
         LOG.info("Expected to receive %s messages", len(message_ids))
 
     def on_start(self, event: proton.Event) -> None:
@@ -51,7 +55,7 @@ class _RecvClient(_MsgClient):
             urls=self.broker_urls, ssl_domain=self.ssl_domain, sasl_enabled=False
         )
         self.receiver = event.container.create_receiver(self.conn, self.topic)
-        self.timer_task = event.container.schedule(self.timeout, self)
+        self.timer_task = event.container.schedule(self.timeout/2, self)
 
     def on_message(self, event: proton.Event) -> None:
         LOG.debug("RECEIVER: On message (%s)", event)
@@ -62,6 +66,8 @@ class _RecvClient(_MsgClient):
         if msg_id in self.recv_ids:
             self.recv_ids[msg_id] = True
             self.recv[msg_id] = (outer_message, headers)
+            self.recv_in_time = True
+            self.last_message_received = datetime.datetime.now()
             self.accept(event.delivery)
         else:
             LOG.debug(f"RECEIVER: Ignored message {msg_id}")
@@ -71,17 +77,23 @@ class _RecvClient(_MsgClient):
             event.receiver.close()
             event.connection.close()
             event.container.stop()
-            LOG.info("ALL MESSAGES RECEIVED")
-        self.recv_in_time = True
+            LOG.info("[%d][%s] All messages received", threading.get_ident(), self.uid)
 
     def on_timer_task(self, event: proton.Event) -> None:
         if self.recv_in_time:
-            LOG.info("RECEIVER: On timeout but messages was received - continue")
+            LOG.info("[%d][%s] RECEIVER: On timeout but messages was received - continue, received: %d/%d",
+                     threading.get_ident(), self.uid,
+                     len([x for x in self.recv_ids.values() if x]), len(self.recv_ids)
+                     )
             self.recv_in_time = False
-            self.timer_task = event.container.schedule(self.timeout, self)
+            self.timer_task = event.reactor.schedule(self.timeout/2, self)
             return
-        LOG.info("[%d] RECEIVER: On timeout (%s) messages: %d/%d",
-                  threading.get_ident(), event, 
+        if (datetime.datetime.now()-self.last_message_received).total_seconds()<self.timeout:
+            self.timer_task = event.reactor.schedule(self.timeout/2, self)
+            return
+        LOG.info("[%d][%s] RECEIVER: On timeout (%s) messages: %d/%d",
+                  threading.get_ident(), event,
+                  self.uid,
                   len([x for x in self.recv_ids.values() if x]), len(self.recv_ids))
         self.timer_task.cancel()
         if event.connection:
@@ -114,6 +126,7 @@ class RecvClient(Container):
 
     def __init__(
         self,
+        uid: str,
         topic: str,
         message_ids: List[str],
         id_key: str,
@@ -158,7 +171,9 @@ class RecvClient(Container):
         self.cert = cert
         self.ca_cert = ca_cert
         self.timeout = timeout
+        self.uid = uid
         handler = _RecvClient(
+            uid=uid,
             topic=topic,
             message_ids=message_ids,
             id_key=id_key,
@@ -185,6 +200,7 @@ class RecvClient(Container):
                 break
             errors_len = len(self._errors)
             recv = _RecvClient(
+                uid=self.uid + "-" + str(x),
                 topic=self.topic,
                 message_ids=self.message_ids,
                 id_key=self.id_key,

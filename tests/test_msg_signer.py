@@ -812,7 +812,7 @@ def test_container_sign_wrong_inputs(patched_uuid, f_config_msg_signer_ok):
 
 
 @patch("uuid.uuid4", return_value="1234-5678-abcd-efgh")
-def test_container_sign_recv_timeout(patched_uuid, f_config_msg_signer_ok):
+def test_container_sign_recv_timeout_fails(patched_uuid, f_config_msg_signer_ok):
     container_sign_operation = ContainerSignOperation(
         task_id="1",
         digests=["sha256:abcdefg"],
@@ -828,7 +828,17 @@ def test_container_sign_recv_timeout(patched_uuid, f_config_msg_signer_ok):
                     name="MessagingTimeout",
                     description="Out of time when receiving messages",
                     source="test-source",
-                )
+                ),
+                MsgError(
+                    name="MessagingTimeout",
+                    description="Out of time when receiving messages",
+                    source="test-source",
+                ),
+                MsgError(
+                    name="MessagingTimeout",
+                    description="Out of time when receiving messages",
+                    source="test-source",
+                ),
             ]
             patched_recv_client.return_value.recv = {
                 "1234-5678-abcd-efgh": (
@@ -838,6 +848,9 @@ def test_container_sign_recv_timeout(patched_uuid, f_config_msg_signer_ok):
             }
 
             signer = MsgSigner()
+            signer.retries = 2
+            signer.send_retries = 1
+
             signer.load_config(load_config(f_config_msg_signer_ok))
             res = signer.container_sign(container_sign_operation)
 
@@ -850,6 +863,62 @@ def test_container_sign_recv_timeout(patched_uuid, f_config_msg_signer_ok):
                 ),
                 operation_result=ContainerSignResult(
                     results=[""], signing_key="test-signing-key", failed=False
+                ),
+            )
+
+@patch("uuid.uuid4", return_value="1234-5678-abcd-efgh")
+def test_container_sign_recv_timeout_ok(patched_uuid, f_config_msg_signer_ok):
+    container_sign_operation = ContainerSignOperation(
+        task_id="1",
+        digests=["sha256:abcdefg"],
+        references=["some-registry/namespace/repo:tag"],
+        signing_key="test-signing-key",
+    )
+
+    with patch("pubtools.sign.signers.msgsigner.SendClient") as patched_send_client:
+        with patch("pubtools.sign.signers.msgsigner.RecvClient") as patched_recv_client:
+            patched_send_client.return_value.run.return_value = []
+            patched_recv_client.return_value._errors = [
+                MsgError(
+                    name="MessagingTimeout",
+                    description="Out of time when receiving messages",
+                    source="test-source",
+                ),
+                MsgError(
+                    name="MessagingTimeout",
+                    description="Out of time when receiving messages",
+                    source="test-source",
+                ),
+            ]
+            patched_recv_client.return_value.recv = {
+                "1234-5678-abcd-efgh": (
+                    {"msg": {"errors": [], "signed_claim": "signed:'claim'"}},
+                    {"fake": "headers"},
+                )
+            }
+
+            signer = MsgSigner()
+            signer.retries = 2
+            signer.send_retries = 1
+
+            signer.load_config(load_config(f_config_msg_signer_ok))
+            res = signer.container_sign(container_sign_operation)
+
+            assert res == SigningResults(
+                signer=signer,
+                operation=container_sign_operation,
+                signer_results=MsgSignerResults(
+                    status="ok",
+                    error_message="",
+                ),
+                operation_result=ContainerSignResult(
+                    results=[
+                        (
+                            {'msg': {'errors': [],
+                                     'signed_claim': "signed:'claim'"}},
+                            {'fake': 'headers'}
+                        )
+                    ], signing_key="test-signing-key", failed=False
                 ),
             )
 

@@ -311,7 +311,7 @@ class MsgSigner(Signer):
             message_ids = [message.body["request_id"] for message in messages]
             LOG.debug(f"{len(messages)} messages to send")
             recvc = RecvClient(
-                uid=i,
+                uid=str(i),
                 message_ids=message_ids,
                 topic=self.topic_listen_to.format(
                     **dict(list(asdict(self).items()) + list(asdict(operation).items()))
@@ -441,6 +441,7 @@ class MsgSigner(Signer):
 
         errors: List[MsgError] = []
         received: Dict[int, Any] = {}
+        LOG.info("Retries %d", self.retries)
 
         for i in range(self.retries):
             message_ids = [message.body["request_id"] for message in messages]
@@ -484,15 +485,20 @@ class MsgSigner(Signer):
             # check receiver errors
             errors = recvc._errors
             if errors and errors[0].name == "MessagingTimeout":
-                if i+1 < self.retries:
+                if i + 1 < self.retries:
                     errors.pop(0)
                 _messages = []
                 for message in messages:
                     if message.body["request_id"] not in received:
                         _messages.append(message)
                 messages = _messages
-                LOG.info("[%d] Messaging timeout, %s signatures left to be processed. retries: (%d/%d)",
-                         threading.get_ident(), len(messages), i, self.retries)
+                LOG.info(
+                    "[%d] Messaging timeout, %s signatures left to be processed. retries: (%d/%d)",
+                    threading.get_ident(),
+                    len(messages),
+                    i,
+                    self.retries,
+                )
                 if not len(messages):
                     break
 

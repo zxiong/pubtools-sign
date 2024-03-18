@@ -55,10 +55,10 @@ class _RecvClient(_MsgClient):
             urls=self.broker_urls, ssl_domain=self.ssl_domain, sasl_enabled=False
         )
         self.receiver = event.container.create_receiver(self.conn, self.topic)
-        self.timer_task = event.container.schedule(self.timeout/2, self)
+        self.timer_task = event.container.schedule(self.timeout / 2, self)
 
     def on_message(self, event: proton.Event) -> None:
-        LOG.debug("RECEIVER: On message (%s)", event)
+        LOG.info("RECEIVER: On message (%s)", event)
         outer_message = json.loads(event.message.body)
         headers = event.message.properties
         msg_id = outer_message["msg"][self.id_key]
@@ -81,20 +81,27 @@ class _RecvClient(_MsgClient):
 
     def on_timer_task(self, event: proton.Event) -> None:
         if self.recv_in_time:
-            LOG.info("[%d][%s] RECEIVER: On timeout but messages was received - continue, received: %d/%d",
-                     threading.get_ident(), self.uid,
-                     len([x for x in self.recv_ids.values() if x]), len(self.recv_ids)
-                     )
+            LOG.info(
+                "[%d][%s] RECEIVER: On timeout but messages was received - continue, received: %d/%d",
+                threading.get_ident(),
+                self.uid,
+                len([x for x in self.recv_ids.values() if x]),
+                len(self.recv_ids),
+            )
             self.recv_in_time = False
-            self.timer_task = event.reactor.schedule(self.timeout/2, self)
+            self.timer_task = event.reactor.schedule(self.timeout / 2, self)
             return
-        if (datetime.datetime.now()-self.last_message_received).total_seconds()<self.timeout:
-            self.timer_task = event.reactor.schedule(self.timeout/2, self)
+        if (datetime.datetime.now() - self.last_message_received).total_seconds() < self.timeout:
+            self.timer_task = event.reactor.schedule(self.timeout / 2, self)
             return
-        LOG.info("[%d][%s] RECEIVER: On timeout (%s) messages: %d/%d",
-                  threading.get_ident(), event,
-                  self.uid,
-                  len([x for x in self.recv_ids.values() if x]), len(self.recv_ids))
+        LOG.info(
+            "[%d][%s] RECEIVER: On timeout (%s) messages: %d/%d",
+            threading.get_ident(),
+            event,
+            self.uid,
+            len([x for x in self.recv_ids.values() if x]),
+            len(self.recv_ids),
+        )
         self.timer_task.cancel()
         if event.connection:
             event.connection.close()  # pragma: no cover
@@ -107,8 +114,8 @@ class _RecvClient(_MsgClient):
                 MsgError(
                     source=event,
                     name="MessagingTimeout",
-                    description="Out of time when receiving messages (%d/%d)" % (
-                            len([x for x in self.recv_ids.values() if x]), len(self.recv_ids))
+                    description="[%d] Out of time when receiving messages (%d/%d)"
+                    % (threading.get_ident(), len([x for x in self.recv_ids.values() if x]), len(self.recv_ids)),
                 )
             )
 
@@ -194,6 +201,7 @@ class RecvClient(Container):
             LOG.warning("No messages to receive")
             return []
 
+        message_ids = self.message_ids[:]
         for x in range(self._retries):
             super().run()
             if len(self._errors) == errors_len:
@@ -211,9 +219,14 @@ class RecvClient(Container):
                 recv=self.recv,
                 errors=self._errors,
             )
-            if self._errors and self._errors[0].name == "MessagingTimeout" and x+1 < self._retries:
+            if (
+                self._errors
+                and self._errors[0].name == "MessagingTimeout"
+                and x + 1 < self._retries
+            ):
                 self._errors.pop(0)
             super().__init__(recv)
+            message_ids = [x for x in message_ids if not self.recv.get(x)]
         else:
             return self._errors
         return self.recv

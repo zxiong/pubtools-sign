@@ -58,7 +58,7 @@ class _RecvClient(_MsgClient):
         self.timer_task = event.container.schedule(self.timeout / 2, self)
 
     def on_message(self, event: proton.Event) -> None:
-        LOG.info("RECEIVER: On message (%s)", event)
+        LOG.debug("RECEIVER: On message (%s)", event)
         outer_message = json.loads(event.message.body)
         headers = event.message.properties
         msg_id = outer_message["msg"][self.id_key]

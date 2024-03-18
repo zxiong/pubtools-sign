@@ -243,9 +243,10 @@ def test_recv_client_errors(
 
         trc.start()
         tsc.start()
-        #time.sleep(1)
+        # time.sleep(1)
         trc.join()
         assert len(errors) == 1
+
 
 def test_recv_client_errors(
     f_cleanup_msgsigner_messages,
@@ -291,14 +292,16 @@ def test_recv_client_errors(
         trc = Thread(target=receiver.run, args=())
 
         on_sendable_original = _SendClient.on_sendable
-        with patch("pubtools.sign.clients.msg_send_client._SendClient.on_sendable", autospec=True) as patched_on_sendable:
+        with patch(
+            "pubtools.sign.clients.msg_send_client._SendClient.on_sendable", autospec=True
+        ) as patched_on_sendable:
             patched_on_sendable.side_effect = lambda self, event: [
                 time.sleep(1),
-                on_sendable_original(self, event)
+                on_sendable_original(self, event),
             ]
             trc.start()
             tsc.start()
-            #time.sleep(1)
+            # time.sleep(1)
             trc.join()
             assert len(errors) == 1
 
@@ -341,17 +344,20 @@ def test_recv_client_timeout_recv_in_time(
     trc = Thread(target=receiver.run, args=())
 
     on_sendable_original = _SendClient.on_sendable
-    with patch("pubtools.sign.clients.msg_send_client._SendClient.on_sendable", autospec=True) as patched_on_sendable:
+    with patch(
+        "pubtools.sign.clients.msg_send_client._SendClient.on_sendable", autospec=True
+    ) as patched_on_sendable:
         patched_on_sendable.side_effect = lambda self, event: [
             on_sendable_original(self, event),
-            time.sleep(1)
+            time.sleep(1),
         ]
         trc.start()
         tsc.start()
-        #time.sleep(1)
+        # time.sleep(1)
         trc.join()
         assert len(errors) == 1
-    #assert False
+    # assert False
+
 
 def test_recv_client_recv_message_stray(
     f_cleanup_msgsigner_messages,

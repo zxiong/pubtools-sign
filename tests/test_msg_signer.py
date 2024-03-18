@@ -866,6 +866,7 @@ def test_container_sign_recv_timeout_fails(patched_uuid, f_config_msg_signer_ok)
                 ),
             )
 
+
 @patch("uuid.uuid4", return_value="1234-5678-abcd-efgh")
 def test_container_sign_recv_timeout_ok(patched_uuid, f_config_msg_signer_ok):
     container_sign_operation = ContainerSignOperation(
@@ -914,11 +915,12 @@ def test_container_sign_recv_timeout_ok(patched_uuid, f_config_msg_signer_ok):
                 operation_result=ContainerSignResult(
                     results=[
                         (
-                            {'msg': {'errors': [],
-                                     'signed_claim': "signed:'claim'"}},
-                            {'fake': 'headers'}
+                            {"msg": {"errors": [], "signed_claim": "signed:'claim'"}},
+                            {"fake": "headers"},
                         )
-                    ], signing_key="test-signing-key", failed=False
+                    ],
+                    signing_key="test-signing-key",
+                    failed=False,
                 ),
             )
 

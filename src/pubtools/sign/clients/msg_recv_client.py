@@ -115,7 +115,11 @@ class _RecvClient(_MsgClient):
                     source=event,
                     name="MessagingTimeout",
                     description="[%d] Out of time when receiving messages (%d/%d)"
-                    % (threading.get_ident(), len([x for x in self.recv_ids.values() if x]), len(self.recv_ids)),
+                    % (
+                        threading.get_ident(),
+                        len([x for x in self.recv_ids.values() if x]),
+                        len(self.recv_ids),
+                    ),
                 )
             )
 
@@ -207,6 +211,13 @@ class RecvClient(Container):
             if len(self._errors) == errors_len:
                 break
             errors_len = len(self._errors)
+            if (
+                self._errors
+                and self._errors[0].name == "MessagingTimeout"
+                and x + 1 < self._retries
+            ):
+                self._errors.pop(0)
+            message_ids = [x for x in message_ids if not self.recv.get(x)]
             recv = _RecvClient(
                 uid=self.uid + "-" + str(x),
                 topic=self.topic,
@@ -219,14 +230,7 @@ class RecvClient(Container):
                 recv=self.recv,
                 errors=self._errors,
             )
-            if (
-                self._errors
-                and self._errors[0].name == "MessagingTimeout"
-                and x + 1 < self._retries
-            ):
-                self._errors.pop(0)
             super().__init__(recv)
-            message_ids = [x for x in message_ids if not self.recv.get(x)]
         else:
             return self._errors
         return self.recv

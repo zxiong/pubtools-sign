@@ -218,6 +218,8 @@ class RecvClient(Container):
             ):
                 self._errors.pop(0)
             message_ids = [x for x in message_ids if not self.recv.get(x)]
+            if not message_ids:
+                break
             recv = _RecvClient(
                 uid=self.uid + "-" + str(x),
                 topic=self.topic,

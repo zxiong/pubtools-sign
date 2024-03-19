@@ -221,7 +221,7 @@ class RecvClient(Container):
             recv = _RecvClient(
                 uid=self.uid + "-" + str(x),
                 topic=self.topic,
-                message_ids=self.message_ids,
+                message_ids=message_ids,
                 id_key=self.id_key,
                 broker_urls=self.broker_urls,
                 cert=self.cert,

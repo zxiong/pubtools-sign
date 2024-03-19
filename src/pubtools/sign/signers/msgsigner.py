@@ -441,9 +441,9 @@ class MsgSigner(Signer):
 
         errors: List[MsgError] = []
         received: Dict[int, Any] = {}
-        LOG.info("Retries %d", self.retries)
+        LOG.info("Starting signing process. Retries %d, timeout: %d", self.retries, self.timeout)
 
-        for i in range(self.retries):
+        for i in range(self.send_retries):
             message_ids = [message.body["request_id"] for message in messages]
             recvc = RecvClient(
                 uid=str(i),

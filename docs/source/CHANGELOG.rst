@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+0.0.6 (25-04-2024)
+-------------------
+Add OTEL trace instrument for signing
+Added send+recv retry cycles
+
 0.0.5 (19-02-2024)
 -------------------
 * Added cosin support

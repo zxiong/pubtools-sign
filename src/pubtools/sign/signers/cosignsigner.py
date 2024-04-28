@@ -232,7 +232,7 @@ class CosignSigner(Signer):
         )
 
         outputs = {}
-        processes = {}
+        ref_args = {}
         common_args = [
             self.cosign_bin,
             "-t",
@@ -256,16 +256,12 @@ class CosignSigner(Signer):
         if operation.references:
             for ref, digest in zip(operation.references, operation.digests):
                 repo, tag = ref.rsplit(":", 1)
-                processes[f"{repo}:{digest}"] = run_command(
-                    common_args + ["-a", f"tag={tag}", f"{repo}@{digest}"],
-                    env=env_vars,
-                )
+                ref_args[f"{repo}@{digest}"] = ["-a", f"tag={tag}", f"{repo}@{digest}"]
         else:
             for ref_digest in operation.digests:
-                processes[f"{ref_digest}"] = run_command(common_args + [ref_digest], env=env_vars)
-        for ref, process in processes.items():
-            stdout, stderr = process.communicate()
-            outputs[ref] = (stdout, stderr, process.returncode)
+                ref_args[ref_digest] = [ref_digest]
+        for ref, args in ref_args.items():
+            outputs[ref] = run_command(common_args + args, env=env_vars, tries=self.retries)
 
         for ref, (stdout, stderr, returncode) in outputs.items():
             if returncode != 0:
@@ -300,12 +296,11 @@ class CosignSigner(Signer):
             common_args += ["--registry-password", self.registry_password]
         env_vars = os.environ.copy()
         env_vars.update(self.env_variables)
-        process = run_command(
+        stdout, stderr, returncode = run_command(
             common_args + [reference],
             env=env_vars,
         )
-        stdout, stderr = process.communicate()
-        if process.returncode != 0:
+        if returncode != 0:
             return False, stderr
         else:
             ret, err_msg = self.container_registry_client.check_container_image_exists(

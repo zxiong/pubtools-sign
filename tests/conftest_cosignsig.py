@@ -20,6 +20,7 @@ cosign_signer:
   rekor_url: https://rekor.sigstore.dev
   registry_user: some-user
   registry_password: some-password
+  retries: 1
   log_level: debug
         """.encode(
                 "utf-8"

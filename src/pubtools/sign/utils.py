@@ -5,13 +5,15 @@ import datetime
 import subprocess
 import os
 import logging
-from typing import Any, Dict, List, Union, Callable, cast, Iterable
+import time
+from typing import Any, Dict, List, Union, Callable, cast, Iterable, Tuple
 
 from .conf.conf import CONFIG_PATHS
 
 from pubtools.tracing import get_trace_wrapper
 
 tw = get_trace_wrapper()
+LOG = logging.getLogger("pubtools.sign.utils")
 
 
 def set_log_level(logger: logging.Logger, level: str) -> None:
@@ -50,12 +52,33 @@ def isodate_now() -> str:
 
 
 @tw.instrument_func(args_to_attr=True)
-def run_command(cmd: List[str], env: Union[Dict[str, Any], None] = None) -> Any:
-    """Run external command and return Process instance."""
-    process = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
-    )
-    return process
+def run_command(
+    cmd: List[str], env: Union[Dict[str, Any], None] = None, tries: int = 3
+) -> Tuple[str, str, int]:
+    """Run external command and return stdout, stderr and returncode."""
+
+    def _run_command(
+        cmd: List[str], env: Union[Dict[str, Any], None] = None
+    ) -> Tuple[str, str, int]:
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
+        )
+        stdout, stderr = process.communicate()
+        return (stdout, stderr, process.returncode)
+
+    for i in range(tries):
+        stdout, stderr, returncode = _run_command(cmd, env)
+        if returncode != 0:
+            wait_time = i * 10
+            LOG.warning(
+                "Run command failed. Will retry in %d seconds [try %s/%s]: %s"
+                % (wait_time, i + 1, tries, stderr)
+            )
+            time.sleep(wait_time)
+            stdout, stderr, returncode = _run_command(cmd, env)
+        else:
+            break
+    return (stdout, stderr, returncode)
 
 
 def _get_config_file(config_candidate: str) -> str:

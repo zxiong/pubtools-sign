@@ -9,3 +9,4 @@ mypy
 types-requests
 types-pyOpenSSL
 types-PyYAML
+pubtools

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import field, dataclass
+import itertools
 import json
 import logging
 from typing import Dict, List, ClassVar, Any, Tuple, Type
@@ -233,6 +234,7 @@ class CosignSigner(Signer):
 
         outputs = {}
         ref_args = {}
+        identity_args = {}
         common_args = [
             self.cosign_bin,
             "-t",
@@ -254,14 +256,28 @@ class CosignSigner(Signer):
         env_vars = os.environ.copy()
         env_vars.update(self.env_variables)
         if operation.references:
-            for ref, digest in zip(operation.references, operation.digests):
+            for ref, identity, digest in itertools.zip_longest(
+                operation.references, operation.identity_references, operation.digests, fillvalue=""
+            ):
                 repo, tag = ref.rsplit(":", 1)
                 ref_args[f"{repo}@{digest}"] = ["-a", f"tag={tag}", f"{repo}@{digest}"]
+                if identity:
+                    identity_args[f"{repo}@{digest}"] = ["--sign-container-identity", identity]
+
         else:
-            for ref_digest in operation.digests:
+            for ref_digest, identity in itertools.zip_longest(
+                operation.digests, operation.identity_references, fillvalue=""
+            ):
                 ref_args[ref_digest] = [ref_digest]
+                if identity:
+                    repo, digest = ref_digest.rsplit("@", 1)
+                    identity_args[f"{repo}@{digest}"] = ["--sign-container-identity", identity]
+
         for ref, args in ref_args.items():
-            outputs[ref] = run_command(common_args + args, env=env_vars, tries=self.retries)
+            _identity_args = identity_args.get(ref, [])
+            outputs[ref] = run_command(
+                common_args + _identity_args + args, env=env_vars, tries=self.retries
+            )
 
         for ref, (stdout, stderr, returncode) in outputs.items():
             if returncode != 0:
@@ -318,6 +334,7 @@ def cosign_container_sign(
     config_file: str = "",
     digest: List[str] = [],
     reference: List[str] = [],
+    identity: List[str] = [],
 ) -> Dict[str, Any]:
     """Run containersign operation with cli arguments.
 
@@ -326,6 +343,7 @@ def cosign_container_sign(
         config_file (str): path to the config file
         digest (str): digest of the image to sign
         reference (str): reference of the image to sign
+        identity (str): identity to sign the image with
     Returns:
         dict: signing result
     """
@@ -336,13 +354,14 @@ def cosign_container_sign(
     operation = ContainerSignOperation(
         digests=digest,
         references=reference,
+        identity_references=identity,
         signing_key=signing_key,
         task_id="",
     )
     signing_result = cosign_signer.sign(operation)
     return {
         "signer_result": signing_result.signer_results.to_dict(),
-        "operation_results": signing_result.operation_result.results,  # type: ignore
+        "operation_results": signing_result.operation_result.results,
         "operation": signing_result.operation.to_dict(),
         "signing_key": signing_result.operation_result.signing_key,
     }
@@ -384,12 +403,20 @@ def cosign_list_existing_signatures(config_file: str, reference: str) -> Tuple[b
     type=str,
     help="References which should be signed.",
 )
+@click.option(
+    "--identity",
+    required=False,
+    multiple=True,
+    type=str,
+    help="Identity reference.",
+)
 @click.option("--raw", default=False, is_flag=True, help="Print raw output instead of json")
 def cosign_container_sign_main(
     signing_key: str = "",
     config_file: str = "",
     digest: List[str] = [],
     reference: List[str] = [],
+    identity: List[str] = [],
     raw: bool = False,
 ) -> None:
     """Entry point method for containersign operation."""
@@ -398,6 +425,7 @@ def cosign_container_sign_main(
         config_file=config_file,
         digest=digest,
         reference=reference,
+        identity=identity,
     )
     if not raw:
         click.echo(json.dumps(ret))

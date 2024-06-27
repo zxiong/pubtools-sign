@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+0.0.8 (27-06-2024)
+------------------
+* Added identity support for cosign signer which translates to cosign --sign-container-identity argument
+
+
 0.0.7 (02-05-2024)
 -------------------
 Fixed cosign OOM

@@ -107,29 +107,33 @@ def f_expected_cosign_sign_args():
 
 @pytest.fixture
 def f_expected_cosign_sign_identity_args():
-    return [
-        "/usr/bin/cosign",
-        "-t",
-        "30s",
-        "sign",
-        "-y",
-        "--key",
-        "test-signing-key",
-        "--allow-http-registry=false",
-        "--allow-insecure-registry=false",
-        "--rekor-url",
-        "https://rekor.sigstore.dev",
-        "--tlog-upload=true",
-        "--registry-username",
-        "some-user",
-        "--registry-password",
-        "some-password",
-        "--sign-container-identity",
-        "some-registry/namespace/repo",
-        "-a",
-        "tag=tag",
-        "some-registry/namespace/repo@sha256:abcdefg",
-    ]
+    cosign_args = []
+    for tag in ["tag1", "tag2"]:
+        args = [
+            "/usr/bin/cosign",
+            "-t",
+            "30s",
+            "sign",
+            "-y",
+            "--key",
+            "test-signing-key",
+            "--allow-http-registry=false",
+            "--allow-insecure-registry=false",
+            "--rekor-url",
+            "https://rekor.sigstore.dev",
+            "--tlog-upload=true",
+            "--registry-username",
+            "some-user",
+            "--registry-password",
+            "some-password",
+            "--sign-container-identity",
+            "some-registry/namespace/repo",
+            "-a",
+            f"tag={tag}",
+            "some-registry/namespace/repo@sha256:abcdefg",
+        ]
+        cosign_args.append(args)
+    return cosign_args
 
 
 @pytest.fixture
@@ -284,9 +288,9 @@ def test_container_sign_identity(
 ):
     container_sign_operation = ContainerSignOperation(
         task_id="",
-        digests=["sha256:abcdefg"],
-        references=["some-registry/namespace/repo:tag"],
-        identity_references=["some-registry/namespace/repo"],
+        digests=["sha256:abcdefg", "sha256:abcdefg"],
+        references=["some-registry/namespace/repo:tag1", "some-registry/namespace/repo:tag2"],
+        identity_references=["some-registry/namespace/repo", "some-registry/namespace/repo"],
         signing_key="test-signing-key",
     )
 
@@ -301,7 +305,18 @@ def test_container_sign_identity(
         patched_popen.assert_has_calls(
             [
                 call(
-                    f_expected_cosign_sign_identity_args,
+                    f_expected_cosign_sign_identity_args[0],
+                    env={"PYTEST_CURRENT_TEST": ANY},
+                    stderr=-1,
+                    stdout=-1,
+                    text=True,
+                )
+            ]
+        )
+        patched_popen.assert_has_calls(
+            [
+                call(
+                    f_expected_cosign_sign_identity_args[1],
                     env={"PYTEST_CURRENT_TEST": ANY},
                     stderr=-1,
                     stdout=-1,
@@ -315,7 +330,7 @@ def test_container_sign_identity(
             operation=container_sign_operation,
             signer_results=CosignSignerResults(status="ok", error_message=""),
             operation_result=ContainerSignResult(
-                results=["stderr"], signing_key="test-signing-key", failed=False
+                results=["stderr", "stderr"], signing_key="test-signing-key", failed=False
             ),
         )
 

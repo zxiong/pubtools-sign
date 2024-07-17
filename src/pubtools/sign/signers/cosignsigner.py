@@ -232,9 +232,8 @@ class CosignSigner(Signer):
             operation_result=operation_result,
         )
 
-        outputs = {}
-        ref_args = {}
-        identity_args = {}
+        outputs = []
+        ref_args = []
         common_args = [
             self.cosign_bin,
             "-t",
@@ -259,27 +258,27 @@ class CosignSigner(Signer):
             for ref, identity, digest in itertools.zip_longest(
                 operation.references, operation.identity_references, operation.digests, fillvalue=""
             ):
-                repo, tag = ref.rsplit(":", 1)
-                ref_args[f"{repo}@{digest}"] = ["-a", f"tag={tag}", f"{repo}@{digest}"]
+                args = []
                 if identity:
-                    identity_args[f"{repo}@{digest}"] = ["--sign-container-identity", identity]
+                    args = ["--sign-container-identity", identity]
+                repo, tag = ref.rsplit(":", 1)
+                args.extend(["-a", f"tag={tag}", f"{repo}@{digest}"])
+                ref_args.append(args)
 
         else:
             for ref_digest, identity in itertools.zip_longest(
                 operation.digests, operation.identity_references, fillvalue=""
             ):
-                ref_args[ref_digest] = [ref_digest]
+                args = []
                 if identity:
-                    repo, digest = ref_digest.rsplit("@", 1)
-                    identity_args[f"{repo}@{digest}"] = ["--sign-container-identity", identity]
+                    args = ["--sign-container-identity", identity]
+                args.append(ref_digest)
+                ref_args.append(args)
 
-        for ref, args in ref_args.items():
-            _identity_args = identity_args.get(ref, [])
-            outputs[ref] = run_command(
-                common_args + _identity_args + args, env=env_vars, tries=self.retries
-            )
+        for args in ref_args:
+            outputs.append(run_command(common_args + args, env=env_vars, tries=self.retries))
 
-        for ref, (stdout, stderr, returncode) in outputs.items():
+        for stdout, stderr, returncode in outputs:
             if returncode != 0:
                 operation_result.results.append(stderr)
                 operation_result.failed = True

@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+0.0.9 (17-07-2024)
+------------------
+* Support multiple tags and identities
+
+
 0.0.8 (27-06-2024)
 ------------------
 * Added identity support for cosign signer which translates to cosign --sign-container-identity argument

@@ -19,7 +19,7 @@ from ..results import ContainerSignResult
 from ..results import SignerResults
 from ..exceptions import UnsupportedOperation
 from ..conf.conf import load_config, CONFIG_PATHS
-from ..utils import set_log_level, run_command, _get_config_file
+from ..utils import set_log_level, run_command, _get_config_file, run_in_parallel, FData
 from ..clients.registry import ContainerRegistryClient, AuthTokenWrapper
 
 
@@ -275,10 +275,16 @@ class CosignSigner(Signer):
                 args.append(ref_digest)
                 ref_args.append(args)
 
-        for args in ref_args:
-            outputs.append(run_command(common_args + args, env=env_vars, tries=self.retries))
+        run_command_args = [
+            FData(
+                args=[common_args + args],
+                kwargs={"env": env_vars, "tries": self.retries},
+            )
+            for args in ref_args
+        ]
+        ret = run_in_parallel(run_command, run_command_args)
 
-        for stdout, stderr, returncode in outputs:
+        for stdout, stderr, returncode in list(ret.values()):
             if returncode != 0:
                 operation_result.results.append(stderr)
                 operation_result.failed = True

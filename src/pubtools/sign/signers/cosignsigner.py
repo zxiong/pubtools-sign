@@ -232,7 +232,6 @@ class CosignSigner(Signer):
             operation_result=operation_result,
         )
 
-        outputs = []
         ref_args = []
         common_args = [
             self.cosign_bin,

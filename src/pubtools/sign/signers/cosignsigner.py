@@ -264,11 +264,10 @@ class CosignSigner(Signer):
                 args.extend(["-a", f"tag={tag}", f"{repo}@{digest}"])
                 # To avoid conflict caused by running in parallel for the same reference, group
                 # args by reference.
-                group_by = f"{repo}@{digest}"
-                if group_by not in ref_args_group:
-                    ref_args_group[group_by] = [args]
-                else:
-                    ref_args_group[group_by].append(args)
+                ref_digest = f"{repo}@{digest}"
+                ref_args_group.setdefault(ref_digest, [])
+                ref_args_group[ref_digest].append(args)
+
         else:
             for ref_digest, identity in itertools.zip_longest(
                 operation.digests, operation.identity_references, fillvalue=""
@@ -277,10 +276,8 @@ class CosignSigner(Signer):
                 if identity:
                     args = ["--sign-container-identity", identity]
                 args.append(ref_digest)
-                if ref_digest not in ref_args_group:
-                    ref_args_group[ref_digest] = [args]
-                else:
-                    ref_args_group[ref_digest].append(args)
+                ref_args_group.setdefault(ref_digest, [])
+                ref_args_group[ref_digest].append(args)
 
         # Execute cosign commands serially in each group while running groups concurrently.
         ret = run_in_parallel(

@@ -232,7 +232,7 @@ class CosignSigner(Signer):
             operation_result=operation_result,
         )
 
-        ref_args = []
+        ref_args_group: dict[str, List[List[str]]] = {}
         common_args = [
             self.cosign_bin,
             "-t",
@@ -262,8 +262,13 @@ class CosignSigner(Signer):
                     args = ["--sign-container-identity", identity]
                 repo, tag = ref.rsplit(":", 1)
                 args.extend(["-a", f"tag={tag}", f"{repo}@{digest}"])
-                ref_args.append(args)
-
+                # To avoid conflict caused by running in parallel for the same reference, group
+                # args by reference.
+                group_by = f"{repo}@{digest}"
+                if group_by not in ref_args_group:
+                    ref_args_group[group_by] = [args]
+                else:
+                    ref_args_group[group_by].append(args)
         else:
             for ref_digest, identity in itertools.zip_longest(
                 operation.digests, operation.identity_references, fillvalue=""
@@ -272,18 +277,26 @@ class CosignSigner(Signer):
                 if identity:
                     args = ["--sign-container-identity", identity]
                 args.append(ref_digest)
-                ref_args.append(args)
+                if ref_digest not in ref_args_group:
+                    ref_args_group[ref_digest] = [args]
+                else:
+                    ref_args_group[ref_digest].append(args)
 
-        run_command_args = [
-            FData(
-                args=[common_args + args],
-                kwargs={"env": env_vars, "tries": self.retries},
-            )
-            for args in ref_args
-        ]
-        ret = run_in_parallel(run_command, run_command_args)
+        # Execute cosign commands serially in each group while running groups concurrently.
+        ret = run_in_parallel(
+            lambda args_group: [
+                run_command(common_args + args, env=env_vars, tries=self.retries)
+                for args in args_group
+            ],
+            [
+                FData(
+                    args=[args_group],
+                )
+                for args_group in ref_args_group.values()
+            ],
+        )
 
-        for stdout, stderr, returncode in list(ret.values()):
+        for stdout, stderr, returncode in itertools.chain(*ret.values()):
             if returncode != 0:
                 operation_result.results.append(stderr)
                 operation_result.failed = True

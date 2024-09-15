@@ -72,6 +72,14 @@ class CosignSigner(Signer):
         },
         default="3m0s",
     )
+    num_threads: int = field(
+        init=False,
+        metadata={
+            "description": "The number of threads for running cosign command",
+            "sample": 10,
+        },
+        default=10,
+    )
     allow_http_registry: bool = field(
         init=False,
         metadata={
@@ -186,6 +194,7 @@ class CosignSigner(Signer):
             auth_file=self.registry_auth_file,
             log_level=self.log_level,
         )
+        self.num_threads = config_data["cosign_signer"].get("num_threads", self.num_threads)
 
     def operations(self: CosignSigner) -> List[Type[SignOperation]]:
         """Return list of supported operations."""
@@ -291,6 +300,7 @@ class CosignSigner(Signer):
                 )
                 for args_group in ref_args_group.values()
             ],
+            self.num_threads,
         )
 
         for stdout, stderr, returncode in itertools.chain(*ret.values()):

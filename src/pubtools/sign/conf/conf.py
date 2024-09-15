@@ -39,6 +39,7 @@ class CosignSignerSchema(ma.Schema):
     registry_user = ma.fields.String(required=False)
     registry_password = ma.fields.String(required=False)
     retries = ma.fields.Integer(required=False)
+    num_threads = ma.fields.Integer(retries=False)
 
 
 class ConfigSchema(ma.Schema):

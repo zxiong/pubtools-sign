@@ -19,7 +19,7 @@ from ..results import ContainerSignResult
 from ..results import SignerResults
 from ..exceptions import UnsupportedOperation
 from ..conf.conf import load_config, CONFIG_PATHS
-from ..utils import set_log_level, run_command, _get_config_file
+from ..utils import set_log_level, run_command, _get_config_file, run_in_parallel, FData
 from ..clients.registry import ContainerRegistryClient, AuthTokenWrapper
 
 
@@ -71,6 +71,14 @@ class CosignSigner(Signer):
             "sample": "60s",
         },
         default="3m0s",
+    )
+    num_threads: int = field(
+        init=False,
+        metadata={
+            "description": "The number of threads for running cosign command",
+            "sample": 10,
+        },
+        default=10,
     )
     allow_http_registry: bool = field(
         init=False,
@@ -186,6 +194,7 @@ class CosignSigner(Signer):
             auth_file=self.registry_auth_file,
             log_level=self.log_level,
         )
+        self.num_threads = config_data["cosign_signer"].get("num_threads", self.num_threads)
 
     def operations(self: CosignSigner) -> List[Type[SignOperation]]:
         """Return list of supported operations."""
@@ -232,8 +241,7 @@ class CosignSigner(Signer):
             operation_result=operation_result,
         )
 
-        outputs = []
-        ref_args = []
+        ref_args_group: dict[str, List[List[str]]] = {}
         common_args = [
             self.cosign_bin,
             "-t",
@@ -263,7 +271,11 @@ class CosignSigner(Signer):
                     args = ["--sign-container-identity", identity]
                 repo, tag = ref.rsplit(":", 1)
                 args.extend(["-a", f"tag={tag}", f"{repo}@{digest}"])
-                ref_args.append(args)
+                # To avoid conflict caused by running in parallel for the same reference, group
+                # args by reference.
+                ref_digest = f"{repo}@{digest}"
+                ref_args_group.setdefault(ref_digest, [])
+                ref_args_group[ref_digest].append(args)
 
         else:
             for ref_digest, identity in itertools.zip_longest(
@@ -273,12 +285,25 @@ class CosignSigner(Signer):
                 if identity:
                     args = ["--sign-container-identity", identity]
                 args.append(ref_digest)
-                ref_args.append(args)
+                ref_args_group.setdefault(ref_digest, [])
+                ref_args_group[ref_digest].append(args)
 
-        for args in ref_args:
-            outputs.append(run_command(common_args + args, env=env_vars, tries=self.retries))
+        # Execute cosign commands serially in each group while running groups concurrently.
+        ret = run_in_parallel(
+            lambda args_group: [
+                run_command(common_args + args, env=env_vars, tries=self.retries)
+                for args in args_group
+            ],
+            [
+                FData(
+                    args=[args_group],
+                )
+                for args_group in ref_args_group.values()
+            ],
+            self.num_threads,
+        )
 
-        for stdout, stderr, returncode in outputs:
+        for stdout, stderr, returncode in itertools.chain(*ret.values()):
             if returncode != 0:
                 operation_result.results.append(stderr)
                 operation_result.failed = True

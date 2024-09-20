@@ -580,6 +580,7 @@ def test_cosignsig_doc_arguments():
             "env_variables": {"description": "environment variables used for signing"},
             "key_aliases": {"description": "Aliases for signing keys"},
             "retries": {"description": "Number of retries for http requests"},
+            "num_threads": {"description": "The number of threads for running cosign command"},
         },
         "examples": {
             "cosign_signer": {
@@ -597,6 +598,7 @@ def test_cosignsig_doc_arguments():
                 "upload_tlog": "False",
                 "key_aliases": "{'production':'abcde1245'}",
                 "retries": 5,
+                "num_threads": 10,
             }
         },
     }

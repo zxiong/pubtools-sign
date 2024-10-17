@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+0.0.10 (18-10-2024)
+------------------
+* Run cosign commands in parallel
+
+
 0.0.9 (17-07-2024)
 ------------------
 * Support multiple tags and identities

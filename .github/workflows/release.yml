@@ -1,8 +1,10 @@
 name: Release on PyPI and github
 
 on:
-  release:
-    types: [push]
+  push:
+    branches:
+      - test-appimage-install
+  workflow_dispatch: {}
 
 jobs:
   build-appimage:

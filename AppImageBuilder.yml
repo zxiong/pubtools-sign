@@ -10,6 +10,7 @@ script:
   # Install icon (every AppImage requires one)
   - touch AppDir/usr/share/icons/hicolor/256x256/apps/app_icon.png
   # Install application and its dependencies
+  - python3.8 -m pip install --upgrade setuptools==70.0.0
   - python3.8 -m pip install --system --ignore-installed --prefix=/usr --root=AppDir pubtools-sign==${VERSION}
 
 AppDir:

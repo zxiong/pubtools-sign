@@ -3,6 +3,7 @@ ChangeLog
 
 0.0.10 (18-10-2024)
 ------------------
+* Fix building AppImage failure
 * Run cosign commands in parallel
 
 

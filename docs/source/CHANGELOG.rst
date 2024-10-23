@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+0.0.10.1 (23-10-2024)
+------------------
+* Fix building AppImage failure
+
+
 0.0.10 (18-10-2024)
 ------------------
 * Fix building AppImage failure

@@ -629,7 +629,7 @@ def msg_container_sign(
     config_file: str = "",
     digest: list[str] = [],
     reference: list[str] = [],
-    requester: Optional[str] = "",
+    requester: str = "",
 ) -> Dict[str, Any]:
     """Run containersign operation with cli arguments."""
     msg_signer = MsgSigner()
@@ -643,6 +643,7 @@ def msg_container_sign(
         references=reference,
         signing_key=signing_key,
         task_id=task_id,
+        requester=requester,
     )
     signing_result = msg_signer.sign(operation)
     return {
@@ -762,7 +763,7 @@ def msg_container_sign_main(
     config_file: str = "",
     digest: List[str] = [],
     reference: List[str] = [],
-    requester: Optional[str] = "",
+    requester: str = "",
     raw: bool = False,
     log_level: str = "INFO",
 ) -> None:

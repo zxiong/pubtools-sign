@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 @dataclasses.dataclass
@@ -16,5 +16,5 @@ class MsgError:
     """Messaging error model."""
 
     name: str
-    description: str
+    description: Optional[str]
     source: Any

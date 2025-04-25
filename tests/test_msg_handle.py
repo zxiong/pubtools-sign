@@ -52,3 +52,11 @@ def test_ingore_error():
     msgsc = _MsgClient(errors)
     msgsc.on_transport_error(mock_error)
     assert errors == []
+
+
+def test_error_no_description():
+    mock_error = Mock(transport=Mock(condition=None, remote_condition=None))
+    errors = []
+    msgsc = _MsgClient(errors)
+    msgsc.on_transport_error(mock_error)
+    assert errors == []

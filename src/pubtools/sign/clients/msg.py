@@ -23,7 +23,9 @@ class _MsgClient(MessagingHandler):
         return hdr + " " + msg
 
     def on_error(self, event: proton.Event, source: Any = None) -> bool:
-        description = getattr(source, 'condition', None) or getattr(source, 'remote_condition', None)
+        description = getattr(source, "condition", None) or getattr(
+            source, "remote_condition", None
+        )
         if not description:
             return False
         if description.name in IGNORED_ERRORS:
@@ -31,7 +33,8 @@ class _MsgClient(MessagingHandler):
         self.errors.append(
             MsgError(
                 name=event,
-                description=getattr(source, 'condition', None) or getattr(source, 'remote_condition', None),
+                description=getattr(source, "condition", None)
+                or getattr(source, "remote_condition", None),
                 source=source,
             )
         )

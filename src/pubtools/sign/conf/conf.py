@@ -20,7 +20,7 @@ class MsgSignerSchema(ma.Schema):
     retries = ma.fields.Integer(required=True)
     send_retries = ma.fields.Integer(required=True)
     message_id_key = ma.fields.String(required=True)
-    log_level = ma.fields.String(default="INFO")
+    log_level = ma.fields.String(required=False)
     key_aliases = ma.fields.Dict(required=False, keys=ma.fields.String(), values=ma.fields.String())
 
 
@@ -33,13 +33,13 @@ class CosignSignerSchema(ma.Schema):
     allow_insecure_registry = ma.fields.Bool(required=False)
     rekor_url = ma.fields.String(required=False)
     upload_tlog = ma.fields.Bool(required=False)
-    log_level = ma.fields.String(default="INFO")
+    log_level = ma.fields.String(required=False)
     env_variables = ma.fields.Dict(required=False)
     key_aliases = ma.fields.Dict(required=False, keys=ma.fields.String(), values=ma.fields.String())
     registry_user = ma.fields.String(required=False)
     registry_password = ma.fields.String(required=False)
     retries = ma.fields.Integer(required=False)
-    num_threads = ma.fields.Integer(retries=False)
+    num_threads = ma.fields.Integer(required=False)
 
 
 class ConfigSchema(ma.Schema):

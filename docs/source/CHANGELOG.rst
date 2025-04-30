@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+0.0.13 (30-04-2025)
+-------------------
+* Ignore only unknown SSL errors in messaging signer
+
 0.0.12 (25-04-2025)
 -------------------
 * Fixed error cheking for ignored errors

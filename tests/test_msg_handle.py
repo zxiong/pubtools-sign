@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from unittest.mock import Mock
 
 
+from pubtools.sign.clients.msg_recv_client import _RecvClient
 from pubtools.sign.clients.msg import _MsgClient
 from pubtools.sign.models.msg import MsgError
 
@@ -54,7 +55,18 @@ def test_ingore_error():
         )
     )
     errors = []
-    msgsc = _MsgClient(errors)
+    msgsc = _RecvClient(
+        uid="1",
+        topic="topic",
+        message_ids=["1"],
+        id_key="id",
+        broker_urls=[""],
+        cert="",
+        ca_cert="",
+        timeout=0,
+        recv={},
+        errors=errors,
+    )
     msgsc.on_transport_error(mock_error)
     assert errors == []
 

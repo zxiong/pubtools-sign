@@ -71,10 +71,11 @@ def test_send_client_errors(
 
 
 @dataclass
-class FakeDescription:
+class FakeCondition:
     """Fake error description."""
 
     name: str
+    description: str
 
 
 def test_ingore_error(
@@ -88,7 +89,11 @@ def test_ingore_error(
         headers={}, address=f_msgsigner_listen_to_topic, body={"message": "test_message1"}
     )
     mock_error = Mock(
-        transport=Mock(condition=FakeDescription(name="amqp:connection:framing-error"))
+        transport=Mock(
+            condition=FakeCondition(
+                name="amqp:connection:framing-error", description="SSL Failure: Unknown error"
+            )
+        )
     )
     errors = []
     msgsc = _SendClient(
@@ -108,7 +113,9 @@ def test_non_ingored_error(
     message1 = MsgMessage(
         headers={}, address=f_msgsigner_listen_to_topic, body={"message": "test_message1"}
     )
-    mock_error = Mock(transport=Mock(condition=FakeDescription(name="amqp:simulated-error")))
+    mock_error = Mock(
+        transport=Mock(condition=FakeCondition(name="amqp:simulated-error", description=""))
+    )
     errors = []
     msgsc = _SendClient(
         [message1], [f"localhost:{port}"], f_client_certificate, f_ca_certificate, errors

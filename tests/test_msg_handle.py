@@ -38,15 +38,20 @@ def test_msg_handler_errors():
 
 
 @dataclass
-class FakeDescription:
+class FakeCondition:
     """Fake error description."""
 
     name: str
+    description: str
 
 
 def test_ingore_error():
     mock_error = Mock(
-        transport=Mock(condition=FakeDescription(name="amqp:connection:framing-error"))
+        transport=Mock(
+            condition=FakeCondition(
+                name="amqp:connection:framing-error", description="SSL Failure: Unknown error"
+            )
+        )
     )
     errors = []
     msgsc = _MsgClient(errors)

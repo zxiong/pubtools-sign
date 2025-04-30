@@ -5,7 +5,7 @@ from ..models.msg import MsgError
 from proton.handlers import MessagingHandler
 import proton
 
-IGNORED_ERRORS = ["amqp:connection:framing-error"]
+IGNORED_ERRORS = [("amqp:connection:framing-error", "SSL Failure: Unknown error")]
 
 LOG_HDR_EVT_FMT = "[EVNT: {}]"
 
@@ -23,12 +23,10 @@ class _MsgClient(MessagingHandler):
         return hdr + " " + msg
 
     def on_error(self, event: proton.Event, source: Any = None) -> bool:
-        description = getattr(source, "condition", None) or getattr(
-            source, "remote_condition", None
-        )
-        if not description:
+        condition = getattr(source, "condition", None) or getattr(source, "remote_condition", None)
+        if not condition:
             return False
-        if description.name in IGNORED_ERRORS:
+        if (condition.name, condition.description) in IGNORED_ERRORS:
             return False
         self.errors.append(
             MsgError(

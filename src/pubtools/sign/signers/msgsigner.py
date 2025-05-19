@@ -36,6 +36,7 @@ from ..utils import (
 
 
 LOG = logging.getLogger("pubtools.sign.signers.msgsigner")
+LOG.setLevel(logging.INFO)
 
 
 class SignRequestType(str, enum.Enum):
@@ -169,6 +170,7 @@ class MsgSigner(Signer):
         claim: str,
         signing_key: str,
         repo: str,
+        signing_key_name: str = "",
         extra_attrs: Optional[Dict[str, Any]] = None,
         sig_type: str = SignRequestType.CONTAINER,
     ) -> dict[str, Any]:
@@ -182,6 +184,8 @@ class MsgSigner(Signer):
             "requested_by": self.creator,
             "repo": repo,
         }
+        if signing_key_name:
+            message["sig_keyname"] = signing_key_name
         message.update(_extra_attrs)
         return message
 
@@ -217,6 +221,7 @@ class MsgSigner(Signer):
                 data,
                 signing_key,
                 repo,
+                signing_key_name=operation.signing_key_name,
                 extra_attrs=extra_attrs,
                 sig_type=sig_type.value,
             ),
@@ -625,6 +630,7 @@ def msg_clear_sign(
 
 def msg_container_sign(
     signing_key: str = "",
+    signing_key_name: str = "",
     task_id: str = "",
     config_file: str = "",
     digest: list[str] = [],
@@ -642,6 +648,7 @@ def msg_container_sign(
         digests=digest,
         references=reference,
         signing_key=signing_key,
+        signing_key_name=signing_key_name,
         task_id=task_id,
         requester=requester,
     )
@@ -727,6 +734,11 @@ def msg_clear_sign_main(
     required=True,
     help="8 characters key fingerprint of key which should be used for signing",
 )
+@click.option(
+    "--signing-key-name",
+    required=False,
+    help="signing key name",
+)
 @click.option("--task-id", required=True, help="Task id identifier (usually pub task-id)")
 @click.option("--config-file", default=CONFIG_PATHS[0], help="path to the config file")
 @click.option(
@@ -759,6 +771,7 @@ def msg_clear_sign_main(
 )
 def msg_container_sign_main(
     signing_key: str = "",
+    signing_key_name: str = "",
     task_id: str = "",
     config_file: str = "",
     digest: List[str] = [],
@@ -775,6 +788,7 @@ def msg_container_sign_main(
 
     ret = msg_container_sign(
         signing_key=signing_key,
+        signing_key_name=signing_key_name,
         task_id=task_id,
         config_file=config_file,
         digest=digest,

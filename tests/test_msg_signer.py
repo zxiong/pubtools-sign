@@ -53,6 +53,34 @@ def test_msg_container_sign(f_msg_signer, f_config_msg_signer_ok):
     assert result.exit_code == 0, result.output
 
 
+def test_msg_container_sign_keyname(f_msg_signer, f_config_msg_signer_ok):
+    f_msg_signer.return_value.sign.return_value.signer_results.to_dict.return_value = {
+        "status": "ok"
+    }
+    f_msg_signer.return_value.sign.return_value.operation_result.results = []
+    f_msg_signer.return_value.sign.return_value.operation_result.signing_key = ""
+    f_msg_signer.return_value.sign.return_value.operation.to_dict.return_value = {}
+    result = CliRunner().invoke(
+        msg_container_sign_main,
+        [
+            "--signing-key",
+            "test-signing-key",
+            "--signing-key-name",
+            "test-signing-key-name",
+            "--digest",
+            "some-digest",
+            "--reference",
+            "some-reference",
+            "--task-id",
+            "1",
+            "--config-file",
+            f_config_msg_signer_ok,
+        ],
+    )
+    print(result.stdout)
+    assert result.exit_code == 0, result.output
+
+
 def test_msg_container_sign_requester(f_msg_signer, f_config_msg_signer_ok):
     f_msg_signer.return_value.sign.return_value.signer_results.to_dict.return_value = {
         "status": "ok"
@@ -408,9 +436,35 @@ def test__construct_signing_message(f_config_msg_signer_ok):
     with patch("uuid.uuid4", return_value="1234-5678-abcd-efgh"):
         with patch("pubtools.sign.signers.msgsigner.isodate_now") as patched_date:
             patched_date.return_value = "created-date-Z"
-            ret = signer._construct_signing_message("some-claim", "some-signing-key", "repo", {})
+            ret = signer._construct_signing_message(
+                "some-claim", "some-signing-key", "repo", extra_attrs={}, signing_key_name=""
+            )
             assert ret == {
                 "sig_key_id": "ning-key",
+                "claim_file": "some-claim",
+                "request_id": "1234-5678-abcd-efgh",
+                "created": "created-date-Z",
+                "requested_by": "pubtools-sign-test",
+                "repo": "repo",
+            }
+
+
+def test__construct_signing_message_signing_key_name(f_config_msg_signer_ok):
+    signer = MsgSigner()
+    signer.load_config(load_config(f_config_msg_signer_ok))
+    with patch("uuid.uuid4", return_value="1234-5678-abcd-efgh"):
+        with patch("pubtools.sign.signers.msgsigner.isodate_now") as patched_date:
+            patched_date.return_value = "created-date-Z"
+            ret = signer._construct_signing_message(
+                "some-claim",
+                "some-signing-key",
+                "repo",
+                extra_attrs={},
+                signing_key_name="test-signing-key-name",
+            )
+            assert ret == {
+                "sig_key_id": "ning-key",
+                "sig_keyname": "test-signing-key-name",
                 "claim_file": "some-claim",
                 "request_id": "1234-5678-abcd-efgh",
                 "created": "created-date-Z",
@@ -595,6 +649,7 @@ def test_clear_sign_aliases(patched_uuid, f_config_msg_signer_aliases):
                     "repo",
                     extra_attrs={"pub_task_id": "1"},
                     sig_type="clearsign_signature",
+                    signing_key_name="",
                 )
 
             assert res == SigningResults(
@@ -755,6 +810,7 @@ def test_container_sign_alias(patched_uuid, f_config_msg_signer_aliases, f_clien
                     "abcde1245",
                     "namespace/repo",
                     extra_attrs={"pub_task_id": "1", "manifest_digest": "sha256:abcdefg"},
+                    signing_key_name="",
                     sig_type="container_signature",
                 )
 

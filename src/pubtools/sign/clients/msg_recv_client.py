@@ -2,7 +2,7 @@ import datetime
 import json
 import logging
 import threading
-from typing import Any, List, Dict, Union
+from typing import Any, List, Dict, Union, cast
 
 from ..models.msg import MsgError
 
@@ -92,14 +92,15 @@ class _RecvClient(_MsgClient):
             self.recv[msg_id] = (outer_message, headers)
             self.recv_in_time = True
             self.last_message_received = datetime.datetime.now()
-            self.accept(event.delivery)
         else:
             LOG.debug(self._format_log_msg(f"RECEIVER: Ignored message {msg_id}", event=event))
 
         if self.recv_ids.values() and all(self.recv_ids.values()):
             self.timer_task.cancel()
-            event.receiver.close()
-            event.connection.close()
+            if event.receiver:
+                event.receiver.close()
+            if event.connection:
+                event.connection.close()
             LOG.info(self._format_log_msg("RECEIVER:All messages received", event=event))
 
     def on_timer_task(self, event: proton.Event) -> None:
@@ -237,7 +238,7 @@ class RecvClient(Container):
         """
         return self.recv  # pragma: no cover
 
-    def run(self) -> Union[Dict[Any, Any], List[MsgError]]:
+    def run(self) -> Union[Dict[Any, Any], List[MsgError]]:  # type: ignore[override]
         """Run the receiver."""
         LOG.info("Running messaging receiver")
         if not len(self.message_ids):
@@ -252,7 +253,7 @@ class RecvClient(Container):
         """Close receiver."""
         LOG.info("Closing messaging receiver")
         if self._handler:
-            self._handler.close()
+            cast(_RecvClient, self._handler).close()
 
 
 class RecvThread(threading.Thread):

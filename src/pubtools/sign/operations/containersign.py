@@ -14,13 +14,21 @@ class ContainerSignOperation(SignOperation):
     """ContainersSignOperation model class."""
 
     ResultType: ClassVar[OperationResult]
-    digests: List[str] = field(metadata={"description": "List of digest to sign"})
-    references: List[str] = field(metadata={"description": "List of references to sign"})
+    digests: List[str] = field(
+        metadata={"description": "List of digest to sign"}, default_factory=list
+    )
+    references: List[str] = field(
+        metadata={"description": "List of references to sign"}, default_factory=list
+    )
     signing_key: str = field(
-        metadata={"description": "Signing key short id which should be used for signing"}
+        metadata={"description": "Signing key short id which should be used for signing"},
+        default="",
     )
     task_id: str = field(
-        metadata={"description": "Usually pub task id, serves as identifier for in signing request"}
+        metadata={
+            "description": "Usually pub task id, serves as identifier for in signing request"
+        },
+        default="",
     )
     identity_references: List[str] = field(
         metadata={"description": "List of references to sign"}, default_factory=list
@@ -34,6 +42,7 @@ class ContainerSignOperation(SignOperation):
         return dict(
             digests=self.digests,
             references=self.references,
+            signing_key_name=self.signing_key_name,
             signing_key=self.signing_key,
             task_id=self.task_id,
             requester=self.requester,

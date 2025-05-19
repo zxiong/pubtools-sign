@@ -20,7 +20,8 @@ class ClearSignOperation(SignOperation):
             "description": "Signing data",
             "required": "true",
             "sample": ["input1", "input2"],
-        }
+        },
+        default_factory=list,
     )
     signing_key: str = field(
         metadata={
@@ -28,7 +29,8 @@ class ClearSignOperation(SignOperation):
             "description": "Signing key short id which should be used for signing",
             "required": "true",
             "sample": "123",
-        }
+        },
+        default="",
     )
     task_id: str = field(
         metadata={
@@ -36,7 +38,8 @@ class ClearSignOperation(SignOperation):
             "description": "Usually pub task id, serves as identifier for in signing request",
             "required": "true",
             "sample": "1",
-        }
+        },
+        default="",
     )
     repo: str = field(
         metadata={
@@ -44,7 +47,8 @@ class ClearSignOperation(SignOperation):
             "description": "Repository name",
             "required": "true",
             "sample": "repo",
-        }
+        },
+        default="",
     )
     requester: str = field(
         metadata={"description": "Requester of the signing operation"}, default=""

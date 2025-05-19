@@ -11,6 +11,9 @@ def test_containersign_operation_doc_argument():
             "references": {"description": "List of references to sign"},
             "requester": {"description": "Requester of the signing operation"},
             "signing_key": {"description": "Signing key short id which should be used for signing"},
+            "signing_key_name": {
+                "description": "Signing key name which should be used for signing"
+            },
             "task_id": {
                 "description": "Usually pub task id, serves as identifier for in signing request"
             },
@@ -20,6 +23,7 @@ def test_containersign_operation_doc_argument():
             "digests": "",
             "references": "",
             "signing_key": "",
+            "signing_key_name": "key1",
             "task_id": "",
             "requester": "",
             "identity_references": "",
@@ -36,6 +40,9 @@ def test_clearsign_operation_doc_argument():
                 "description": "Signing key short id which should be used for signing",
                 "required": "true",
             },
+            "signing_key_name": {
+                "description": "Signing key name which should be used for signing"
+            },
             "task_id": {
                 "type": "str",
                 "description": "Usually pub task id, serves as identifier for in signing request",
@@ -51,6 +58,7 @@ def test_clearsign_operation_doc_argument():
         "examples": {
             "inputs": ["input1", "input2"],
             "signing_key": "123",
+            "signing_key_name": "key1",
             "task_id": "1",
             "requester": "",
             "repo": "repo",
@@ -63,12 +71,14 @@ def test_container_sign_to_dict():
         digests=["digest"],
         references=["references"],
         signing_key="sig-key",
+        signing_key_name="sig-key-name",
         task_id="task-id",
         requester="requester",
     ).to_dict() == dict(
         digests=["digest"],
         references=["references"],
         signing_key="sig-key",
+        signing_key_name="sig-key-name",
         task_id="task-id",
         requester="requester",
     )

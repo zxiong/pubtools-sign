@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar, Dict, Any, Type
 from typing_extensions import Self
 
@@ -15,6 +15,13 @@ class SignOperation(ABC):
 
     ResultType: ClassVar[OperationResult]
     signing_key: str
+    signing_key_name: str = field(
+        default="",
+        metadata={
+            "description": "Signing key name which should be used for signing",
+            "sample": "key1",
+        },
+    )
 
     @classmethod
     def doc_arguments(cls: Type[Self]) -> Dict[str, Any]:

@@ -50,12 +50,12 @@ class _SendClient(_MsgClient):
         )
 
     def on_connection_opened(self, event: proton.Event) -> None:
-        event.container.connected = True
-        self.sender = event.container.create_sender(event.connection)
+        if event.connection:
+            self.sender = event.container.create_sender(event.connection)
 
     @tw.instrument_func()
     def on_sendable(self, event: proton.Event) -> None:
-        if event.sender.credit and self.sent < self.total:
+        if event.sender and event.sender.credit and self.sent < self.total:
             message = self.messages[self.sent]
             # Inject trace context to message properties
             propagator.inject(carrier=message.headers)
@@ -66,13 +66,14 @@ class _SendClient(_MsgClient):
                     f"{json.dumps(message.headers)}",
                 )
             )
-            event.sender.send(
-                proton.Message(
-                    properties=message.headers,
-                    address=message.address,
-                    body=json.dumps(message.body),
+            if event.sender:
+                event.sender.send(
+                    proton.Message(
+                        properties=message.headers,
+                        address=message.address,
+                        body=json.dumps(message.body),
+                    )
                 )
-            )
             self.sent += 1
 
     def on_accepted(self, event: proton.Event) -> None:
@@ -80,7 +81,8 @@ class _SendClient(_MsgClient):
         self.confirmed += 1
         if self.confirmed == self.total:
             LOG.info("SENDER: closing")
-            event.connection.close()
+            if event.connection:
+                event.connection.close()
             self.sender.close()
 
     def on_disconnected(self, event: proton.Event) -> None:  # pragma: no cover
@@ -138,7 +140,7 @@ class SendClient(Container):
         self._errors = errors
         super().__init__(self.handler, **kwargs)
 
-    def run(self) -> List[MsgError]:
+    def run(self) -> List[MsgError]:  # type: ignore[override]
         """Run the SendClient."""
         errors_len = 0
         if not len(self.messages):

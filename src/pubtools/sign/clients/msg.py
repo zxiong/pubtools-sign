@@ -30,9 +30,8 @@ class _MsgClient(MessagingHandler):
             return False
         self.errors.append(
             MsgError(
-                name=event,
-                description=getattr(source, "condition", None)
-                or getattr(source, "remote_condition", None),
+                name=condition.name,
+                description=condition.description,
                 source=source,
             )
         )

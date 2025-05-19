@@ -123,6 +123,8 @@ def test_non_ingored_error(
     msgsc.on_transport_error(mock_error)
     assert errors == [
         MsgError(
-            name=mock_error, description=mock_error.transport.condition, source=mock_error.transport
+            name="amqp:simulated-error",
+            description="",
+            source=mock_error.transport,
         )
     ]

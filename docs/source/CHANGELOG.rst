@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+0.0.14 (30-04-2025)
+-------------------
+* Added signing_key_name attribute to msg container signing which is alias of singing-key
+  sent to signer.
+
 0.0.13 (30-04-2025)
 -------------------
 * Ignore only unknown SSL errors in messaging signer

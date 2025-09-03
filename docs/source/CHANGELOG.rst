@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+0.0.15 (03-09-2025)
+-------------------
+* Added mkdocs documentation
+* Unlock OTEL instrument package version
+
 0.0.14 (30-04-2025)
 -------------------
 * Added signing_key_name attribute to msg container signing which is alias of singing-key

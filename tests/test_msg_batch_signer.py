@@ -262,7 +262,7 @@ def test_create_msg_batch_message(f_config_msg_batch_signer_ok):
                         "service": "pubtools-sign",
                         "environment": "prod",
                         "owner_id": "pubtools-sign-test",
-                        "mtype": SignRequestType.CONTAINER,
+                        "mtype": "container_signature",
                         "source": "metadata",
                     },
                     address="topic://Topic.sign",
@@ -270,27 +270,26 @@ def test_create_msg_batch_message(f_config_msg_batch_signer_ok):
                         "claims": [
                             {
                                 "claim_file": "claim1",
-                                "sig_keyname": [""],
-                                "sig_key_ids": ["test-key"],
+                                "sig_keynames": [""],
+                                "sig_keyids": ["test-key"],
                                 "manifest_digest": "some-digest-1",
                             },
                             {
                                 "claim_file": "claim2",
-                                "sig_keyname": [""],
-                                "sig_key_ids": ["test-key"],
+                                "sig_keynames": [""],
+                                "sig_keyids": ["test-key"],
                                 "manifest_digest": "some-digest-2",
                             },
                             {
                                 "claim_file": "claim3",
-                                "sig_keyname": [""],
-                                "sig_key_ids": ["test-key"],
+                                "sig_keynames": [""],
+                                "sig_keyids": ["test-key"],
                                 "manifest_digest": "some-digest-3",
                             },
                         ],
                         "request_id": "1234-5678-abcd-efgh",
                         "created": "created-date-Z",
                         "requested_by": "pubtools-sign-test",
-                        "repo": "repo",
                     },
                 )
             ]
@@ -651,22 +650,28 @@ def test_clear_sign_recv_timeout(patched_uuid, f_config_msg_batch_signer_ok):
     with patch("pubtools.sign.signers.msgsigner.SendClient") as patched_send_client:
         with patch("pubtools.sign.signers.msgsigner.RecvClient") as patched_recv_client:
             patched_send_client.return_value.run.return_value = []
-            patched_recv_client.return_value._errors = [
-                MsgError(
-                    name="MessagingTimeout",
-                    description="Out of time when receiving messages",
-                    source="test-source",
-                ),
-                MsgError(
-                    name="MessagingTimeout",
-                    description="Out of time when receiving messages",
-                    source="test-source",
-                ),
-                MsgError(
-                    name="MessagingTimeout",
-                    description="Out of time when receiving messages",
-                    source="test-source",
-                ),
+            patched_recv_client.return_value.get_errors.side_effect = [
+                [
+                    MsgError(
+                        name="MessagingTimeout",
+                        description="Out of time when receiving messages",
+                        source="test-source",
+                    ),
+                ],
+                [
+                    MsgError(
+                        name="MessagingTimeout",
+                        description="Out of time when receiving messages",
+                        source="test-source",
+                    )
+                ],
+                [
+                    MsgError(
+                        name="MessagingTimeout",
+                        description="Out of time when receiving messages",
+                        source="test-source",
+                    )
+                ],
             ]
             patched_recv_client.return_value.recv = {"1234-5678-abcd-efgh": "signed:'hello world'"}
 
@@ -682,8 +687,7 @@ def test_clear_sign_recv_timeout(patched_uuid, f_config_msg_batch_signer_ok):
                 operation=clear_sign_operation,
                 signer_results=MsgSignerResults(
                     status="error",
-                    error_message="MessagingTimeout : Out of time when receiving messages\n"
-                    "MessagingTimeout : Out of time when receiving messages\n",
+                    error_message="MessagingTimeout : Out of time when receiving messages\n",
                 ),
                 operation_result=ClearSignResult(outputs=[""], signing_keys=["test-signing-key"]),
             )

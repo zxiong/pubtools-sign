@@ -90,6 +90,24 @@ pubtools-sign-msg-container-sign \
     --task-id 32e729ee-62ae-4d17-b067-d86f6d89939f
 ```
 
+## Batch signing
+
+New type of signing request is supported for batch signing. It allows to sign multiple container images. You can specify multiple
+`--reference` and `--digest` arguments which will be splitted into batches and signed with all provided signing keys.
+
+```bash
+pubtools-sign-msg-container-sign \
+    --signing-key testing \
+    --config-file ~/.config/pubtools-sign/conf-hacbs.yaml \
+    --reference registry.redhat.io/ubi9/ubi:latest \
+    --reference registry.redhat.io/ubi9/ubi:9 \
+    --reference registry.redhat.io/ubi9/ubi:9.1 \
+    --digest sha256:1d15a69724bdf0fba6fda9baaf5f3e10e562324964d0c12664f4412f549b755d \
+    --digest sha256:1d15a69724bdf0fba6fda9baaf5f3e10e562324964d0c12664f4412f549b755d \
+    --digest sha256:1d15a69724bdf0fba6fda9baaf5f3e10e562324964d0c12664f4412f549b755d \
+    --task-id 32e729ee-62ae-4d17-b067-d86f6d89939f \
+    --signer-type batch
+```
 
 ## Cosign signer
 

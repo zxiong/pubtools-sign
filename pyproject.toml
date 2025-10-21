@@ -3,14 +3,14 @@ name = "pubtools-sign"
 description = "Collection of tools producing signed artifacts"
 readme = "README.rst"
 requires-python = ">=3.7"
-version = "0.0.15"
+version = "1.0.0"
 
 classifiers = [  # Optional
   # How mature is this project? Common values are
   #   3 - Alpha
   #   4 - Beta
   #   5 - Production/Stable
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 5 - Production/Stable",
 
   # Indicate who your project is intended for
   "Intended Audience :: Developers",

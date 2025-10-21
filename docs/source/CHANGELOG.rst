@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+1.0.0 (21-10-2025)
+-------------------
+* Added msg batch signing support
+
 0.0.15 (03-09-2025)
 -------------------
 * Added mkdocs documentation

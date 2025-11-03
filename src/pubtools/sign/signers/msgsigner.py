@@ -641,8 +641,9 @@ class MsgBatchSigner(MsgSigner):
             {
                 "claim_file": claim,
                 "sig_keynames": signing_key_names,
-                "sig_keyids": [sig_key[-8:] for sig_key in signing_keys],
+                "sig_key_ids": [sig_key[-8:] for sig_key in signing_keys],
                 "manifest_digest": digest,
+                "repo": repo,
             }
             for claim, digest in zip(claims, _extra_attrs.get("manifest_digest", ""))
         ]
@@ -726,7 +727,7 @@ class MsgBatchSigner(MsgSigner):
                         args=[claims, repo, operation, SignRequestType.CONTAINER],
                         kwargs={
                             "extra_attrs": {
-                                "pub_task_id": operation.task_id,
+                                "pipeline_run_id": operation.task_id,
                                 "manifest_digest": digests,
                             }
                         },
@@ -739,7 +740,7 @@ class MsgBatchSigner(MsgSigner):
                     args=[claims, repo, operation, SignRequestType.CONTAINER],
                     kwargs={
                         "extra_attrs": {
-                            "pub_task_id": operation.task_id,
+                            "pipeline_run_id": operation.task_id,
                             "manifest_digest": digests,
                         }
                     },

@@ -438,6 +438,7 @@ def cosign_container_sign(
 @click.option(
     "--signing-key",
     required=True,
+    multiple=True,
     help="signing key used by cosign.",
 )
 @click.option("--config-file", default=CONFIG_PATHS[0], help="path to the config file")

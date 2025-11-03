@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+1.0.1 (03-11-2025)
+-------------------
+* Fixed msg batch signing bug
+* Compatibility with upstream msg signer
+
 1.0.0 (21-10-2025)
 -------------------
 * Added msg batch signing support

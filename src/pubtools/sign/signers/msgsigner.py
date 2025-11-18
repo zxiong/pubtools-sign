@@ -158,6 +158,14 @@ class MsgSigner(Signer):
     )
 
     log_level: str = field(init=False, metadata={"description": "Log level", "sample": "debug"})
+    task_id_attribute: str = field(
+        init=False,
+        default="pub_task_id",
+        metadata={
+            "description": "Attribute used to custom identification of signing request",
+            "sample": "task_id",
+        },
+    )
 
     SUPPORTED_OPERATIONS: ClassVar[List[Type[SignOperation]]] = [
         ContainerSignOperation,
@@ -268,6 +276,7 @@ class MsgSigner(Signer):
         self.timeout = config_data["msg_signer"]["timeout"]
         self.creator = self._get_cert_subject_cn()
         self.key_aliases = config_data["msg_signer"].get("key_aliases", {})
+        self.task_id_attribute = config_data["msg_signer"].get("task_id_attribute", "pub_task_id")
 
     def _get_cert_subject_cn(self) -> str:
         x509 = crypto.load_certificate(
@@ -402,7 +411,7 @@ class MsgSigner(Signer):
                 operation.repo,
                 operation,
                 SignRequestType.CLEARSIGN,
-                extra_attrs={"pub_task_id": operation.task_id},
+                extra_attrs={self.task_id_attribute: operation.task_id},
             )
             for message in _key_messages:
                 message_to_data[message.body["request_id"]] = message
@@ -478,7 +487,10 @@ class MsgSigner(Signer):
                         SignRequestType.CONTAINER,
                     ],
                     kwargs={
-                        "extra_attrs": {"pub_task_id": operation.task_id, "manifest_digest": digest}
+                        "extra_attrs": {
+                            self.task_id_attribute: operation.task_id,
+                            "manifest_digest": digest,
+                        }
                     },
                 )
             )
@@ -571,7 +583,7 @@ class MsgSigner(Signer):
                 "",
                 operation,
                 SignRequestType.GPGSIGN,
-                extra_attrs={"pub_task_id": operation.task_id, "manifest_digest": ""},
+                extra_attrs={self.task_id_attribute: operation.task_id},
             )
             for message in _key_messages:
                 message_to_data[message.body["request_id"]] = message
@@ -776,6 +788,9 @@ class MsgBatchSigner(MsgSigner):
         self.creator = self._get_cert_subject_cn()
         self.key_aliases = config_data["msg_batch_signer"].get("key_aliases", {})
         self.chunk_size = config_data["msg_batch_signer"]["chunk_size"]
+        self.task_id_attribute = config_data["msg_batch_signer"].get(
+            "task_id_attribute", "pub_task_id"
+        )
 
 
 def msg_clear_sign(

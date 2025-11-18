@@ -1276,6 +1276,9 @@ def test_msgsig_doc_arguments():
             "creator": {"description": "Identification of creator of signing request"},
             "environment": {"description": "Environment indetification in sent messages"},
             "service": {"description": "Service identificator"},
+            "task_id_attribute": {
+                "description": "Attribute used to custom identification of signing request"
+            },
             "timeout": {"description": "Timeout for messaging receive"},
             "retries": {"description": "Retries for messaging receive"},
             "send_retries": {"description": "Retries for messaging send+receive"},
@@ -1296,6 +1299,7 @@ def test_msgsig_doc_arguments():
                 "creator": "pubtools-sign",
                 "environment": "prod",
                 "service": "pubtools-sign",
+                "task_id_attribute": "task_id",
                 "timeout": 1,
                 "retries": 3,
                 "send_retries": 2,

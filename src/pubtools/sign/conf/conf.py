@@ -22,6 +22,7 @@ class MsgSignerSchema(ma.Schema):
     message_id_key = ma.fields.String(required=True)
     log_level = ma.fields.String(required=False)
     key_aliases = ma.fields.Dict(required=False, keys=ma.fields.String(), values=ma.fields.String())
+    task_id_attribute = ma.fields.String(required=False)
 
 
 class MsgBatchSignerSchema(MsgSignerSchema):

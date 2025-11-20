@@ -10,3 +10,4 @@ signatures produces by them.
 
 * [[clear-sign|Clearsign]]
 * [[container-signing|Containers Signing]]
+* [[blob-signing|Blob Signing]]

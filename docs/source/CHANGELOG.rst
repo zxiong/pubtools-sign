@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+1.0.2 (20-11-2025)
+-------------------
+* Added msg blob signer
+
 1.0.1 (03-11-2025)
 -------------------
 * Fixed msg batch signing bug

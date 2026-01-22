@@ -1241,6 +1241,13 @@ def test_recv_client_recv_message_break(
                     source=ANY,
                 )
             ],
+            [
+                MsgError(
+                    name="MessagingTimeout",
+                    description="Out of time when receiving messages",
+                    source=ANY,
+                )
+            ],
             [],
         ]
         patched_recv_get_received.side_effect = [{"1234-5678-abcd-efgh": True}]

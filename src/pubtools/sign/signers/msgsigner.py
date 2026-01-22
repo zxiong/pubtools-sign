@@ -759,8 +759,8 @@ class MsgBatchSigner(MsgSigner):
                 )
                 batch_data.append(fdata)
 
-            ret = run_in_parallel(self._create_msg_batch_message, batch_data)
-            messages.extend(list(ret.values()))
+        ret = run_in_parallel(self._create_msg_batch_message, batch_data)
+        messages.extend(list(ret.values()))
         return messages
 
     def load_config(self: Self, config_data: Dict[str, Any]) -> None:

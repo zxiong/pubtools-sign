@@ -828,3 +828,87 @@ def test_msgsigresult_doc_arguments():
             "sample": {"status": "ok", "error_message": ""},
         }
     }
+
+
+def test_prepare_messages_multi_repo_no_duplication(f_config_msg_batch_signer_ok):
+    """Test that _prepare_messages doesn't duplicate batches across multiple repos.
+
+    This test verifies the fix for a bug where `run_in_parallel` and `messages.extend`
+    were incorrectly indented inside the repo loop, causing batch_data to be processed
+    multiple times (once per repo iteration), leading to O(N²) message duplication.
+
+    With chunk_size=2:
+    - repo-a (3 digests) -> 2 batches (2 + 1)
+    - repo-b (2 digests) -> 1 batch
+    - repo-c (1 digest)  -> 1 batch
+    Total expected: 4 batches, NOT 10 (2 + 4 + 4 from the buggy code)
+    """
+    signer = MsgBatchSigner()
+    signer.load_config(load_config(f_config_msg_batch_signer_ok))
+
+    # Create operation with references spanning 3 different repos
+    container_sign_operation = ContainerSignOperation(
+        task_id="1",
+        digests=[
+            # repo-a: 3 digests
+            "sha256:aaa1",
+            "sha256:aaa2",
+            "sha256:aaa3",
+            # repo-b: 2 digests
+            "sha256:bbb1",
+            "sha256:bbb2",
+            # repo-c: 1 digest
+            "sha256:ccc1",
+        ],
+        references=[
+            # repo-a: 3 references
+            "registry.example.com/namespace/repo-a:tag1",
+            "registry.example.com/namespace/repo-a:tag2",
+            "registry.example.com/namespace/repo-a:tag3",
+            # repo-b: 2 references
+            "registry.example.com/namespace/repo-b:tag1",
+            "registry.example.com/namespace/repo-b:tag2",
+            # repo-c: 1 reference
+            "registry.example.com/namespace/repo-c:tag1",
+        ],
+        signing_keys=["test-signing-key"],
+    )
+
+    # Call _prepare_messages directly to test the batching logic
+    with patch("pubtools.sign.signers.msgsigner.run_in_parallel") as mock_run_parallel:
+        # Mock run_in_parallel to return message placeholders
+        mock_run_parallel.return_value = {i: [f"msg_{i}"] for i in range(10)}
+
+        signer._prepare_messages(container_sign_operation)
+
+        # run_in_parallel should be called exactly ONCE with all batch_data
+        assert mock_run_parallel.call_count == 1, (
+            f"run_in_parallel should be called once, but was called "
+            f"{mock_run_parallel.call_count} times. This indicates the bug where "
+            f"run_in_parallel was incorrectly inside the repo loop."
+        )
+
+        # Verify the batch_data passed to run_in_parallel
+        call_args = mock_run_parallel.call_args
+        batch_data = list(call_args[0][1])  # Second positional arg is the data iterable
+
+        # With chunk_size=2:
+        # - repo-a (3 digests): 2 batches (chunk of 2, chunk of 1)
+        # - repo-b (2 digests): 1 batch (chunk of 2)
+        # - repo-c (1 digest): 1 batch (chunk of 1)
+        # Total: 4 batches
+        expected_batch_count = 4
+        assert len(batch_data) == expected_batch_count, (
+            f"Expected {expected_batch_count} batches, got {len(batch_data)}. "
+            f"Batch data: {[fd.args[1] for fd in batch_data]}"  # Show repo names
+        )
+
+        # Verify each repo appears the correct number of times
+        repo_counts = {}
+        for fdata in batch_data:
+            repo = fdata.args[1]  # repo is the second arg
+            repo_counts[repo] = repo_counts.get(repo, 0) + 1
+
+        assert repo_counts.get("namespace/repo-a") == 2, "repo-a should have 2 batches"
+        assert repo_counts.get("namespace/repo-b") == 1, "repo-b should have 1 batch"
+        assert repo_counts.get("namespace/repo-c") == 1, "repo-c should have 1 batch"

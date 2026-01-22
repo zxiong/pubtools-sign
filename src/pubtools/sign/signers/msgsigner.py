@@ -45,6 +45,7 @@ class SignRequestType(str, enum.Enum):
     CONTAINER = "container_signature"
     CLEARSIGN = "clearsign_signature"
     GPGSIGN = "gpg_signature"
+    BATCH = "batch"
 
 
 @dataclass()
@@ -648,9 +649,9 @@ class MsgBatchSigner(MsgSigner):
         repo: str,
         signing_key_names: List[str] = [],
         extra_attrs: Optional[Dict[str, Any]] = None,
-        sig_type: str = SignRequestType.CONTAINER,
+        sig_type: str = SignRequestType.BATCH,
     ) -> dict[str, Any]:
-        data_attr = "claims" if sig_type == SignRequestType.CONTAINER else "data"
+        data_attr = "claims" if sig_type == SignRequestType.BATCH else "data"
         _extra_attrs = extra_attrs or {}
         processed_claims = [
             {
@@ -739,7 +740,7 @@ class MsgBatchSigner(MsgSigner):
                 digests.append(digest)
                 if len(claims) >= self.chunk_size:
                     fdata = FData(
-                        args=[claims, repo, operation, SignRequestType.CONTAINER],
+                        args=[claims, repo, operation, SignRequestType.BATCH],
                         kwargs={
                             "extra_attrs": {
                                 "pipeline_run_id": operation.task_id,
@@ -752,7 +753,7 @@ class MsgBatchSigner(MsgSigner):
                     digests = []
             if claims:
                 fdata = FData(
-                    args=[claims, repo, operation, SignRequestType.CONTAINER],
+                    args=[claims, repo, operation, SignRequestType.BATCH],
                     kwargs={
                         "extra_attrs": {
                             "pipeline_run_id": operation.task_id,

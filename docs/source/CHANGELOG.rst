@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+1.0.4 (22-01-2026)
+-------------------
+* Fix sig type for batch signer
+
 1.0.3 (22-01-2026)
 -------------------
 * Not retry send when receiver has no error

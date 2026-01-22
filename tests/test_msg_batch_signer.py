@@ -255,14 +255,14 @@ def test_create_msg_batch_message(f_config_msg_batch_signer_ok):
                 task_id="1",
             )
             assert signer._create_msg_batch_message(
-                data, "repo", operation, SignRequestType.CONTAINER
+                data, "repo", operation, SignRequestType.BATCH
             ) == [
                 MsgMessage(
                     headers={
                         "service": "pubtools-sign",
                         "environment": "prod",
                         "owner_id": "pubtools-sign-test",
-                        "mtype": "container_signature",
+                        "mtype": "batch",
                         "source": "metadata",
                     },
                     address="topic://Topic.sign",
@@ -421,7 +421,7 @@ def test_container_sign_alias(
                     "namespace/repo",
                     extra_attrs={"pipeline_run_id": "1", "manifest_digest": ["sha256:abcdefg"]},
                     signing_key_names=[""],
-                    sig_type="container_signature",
+                    sig_type="batch",
                 )
 
             patched_send_client.assert_called_with(

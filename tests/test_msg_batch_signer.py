@@ -675,6 +675,13 @@ def test_clear_sign_recv_timeout(patched_uuid, f_config_msg_batch_signer_ok):
                         source="test-source",
                     )
                 ],
+                [
+                    MsgError(
+                        name="MessagingTimeout",
+                        description="Out of time when receiving messages",
+                        source="test-source",
+                    )
+                ],
             ]
             patched_recv_client.return_value.recv = {"1234-5678-abcd-efgh": "signed:'hello world'"}
 
@@ -721,6 +728,13 @@ def test_recv_client_recv_message_break(
         "uuid.uuid4", return_value="1234-5678-abcd-efgh"
     ) as _:
         patched_recv_get_errors.side_effect = [
+            [
+                MsgError(
+                    name="MessagingTimeout",
+                    description="Out of time when receiving messages",
+                    source=ANY,
+                )
+            ],
             [
                 MsgError(
                     name="MessagingTimeout",

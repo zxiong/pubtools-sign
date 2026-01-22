@@ -391,6 +391,9 @@ class MsgSigner(Signer):
                     recvt.join()
                 elif not errors:
                     break
+            errors = recvc.get_errors()
+            if not errors:
+                break
         return recvc.recv, recvc.get_errors(), 0 if not recvc.get_errors() else 1
 
     def clear_sign(self: MsgSigner, operation: ClearSignOperation) -> SigningResults:

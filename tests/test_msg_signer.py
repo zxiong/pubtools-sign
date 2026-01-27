@@ -489,7 +489,6 @@ def test__construct_headers(f_config_msg_signer_ok):
             assert ret == {
                 "service": "pubtools-sign",
                 "environment": "prod",
-                "expires": 3000,
                 "owner_id": "pubtools-sign-test",
                 "mtype": SignRequestType.CONTAINER,
                 "source": "metadata",
@@ -523,7 +522,6 @@ def test_create_msg_message(f_config_msg_signer_ok):
                         "service": "pubtools-sign",
                         "environment": "prod",
                         "owner_id": "pubtools-sign-test",
-                        "expires": 3000,
                         "mtype": SignRequestType.CONTAINER,
                         "source": "metadata",
                     },
@@ -536,6 +534,7 @@ def test_create_msg_message(f_config_msg_signer_ok):
                         "requested_by": "pubtools-sign-test",
                         "repo": "repo",
                     },
+                    ttl=3,
                 )
             ]
             assert signer._create_msg_messages(
@@ -546,7 +545,6 @@ def test_create_msg_message(f_config_msg_signer_ok):
                         "service": "pubtools-sign",
                         "environment": "prod",
                         "owner_id": "pubtools-sign-test",
-                        "expires": 3000,
                         "mtype": SignRequestType.CLEARSIGN,
                         "source": "metadata",
                     },
@@ -559,6 +557,7 @@ def test_create_msg_message(f_config_msg_signer_ok):
                         "requested_by": "pubtools-sign-test",
                         "repo": "repo",
                     },
+                    ttl=3,
                 )
             ]
 

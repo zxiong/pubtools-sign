@@ -72,6 +72,7 @@ class _SendClient(_MsgClient):
                         properties=message.headers,
                         address=message.address,
                         body=json.dumps(message.body),
+                        ttl=message.ttl,
                     )
                 )
             self.sent += 1

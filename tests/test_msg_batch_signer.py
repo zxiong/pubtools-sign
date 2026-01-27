@@ -261,7 +261,6 @@ def test_create_msg_batch_message(f_config_msg_batch_signer_ok):
                     headers={
                         "service": "pubtools-sign",
                         "environment": "prod",
-                        "expires": 3000,
                         "owner_id": "pubtools-sign-test",
                         "mtype": "batch",
                         "source": "metadata",
@@ -295,6 +294,7 @@ def test_create_msg_batch_message(f_config_msg_batch_signer_ok):
                         "created": "created-date-Z",
                         "requested_by": "pubtools-sign-test",
                     },
+                    ttl=3,
                 )
             ]
 

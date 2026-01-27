@@ -10,11 +10,13 @@ class MsgMessage:
         headers (Dict[str, Any]): Headers of the message.
         address (str): Address to which the message is sent.
         body (Dict[str, Any]): Body of the message.
+        ttl (Optional[int]): Time To Live of the message.
     """
 
     headers: Dict[str, Any]
     address: str
     body: Dict[str, Any]
+    ttl: Optional[int] = 0
 
 
 @dataclasses.dataclass

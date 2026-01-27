@@ -214,7 +214,6 @@ class MsgSigner(Signer):
             "owner_id": self.creator,
             "mtype": sig_type.value,
             "source": "metadata",
-            "expires": self.timeout * self.retries * 1000,
         }
         if extra_attrs:
             headers.update(extra_attrs)
@@ -251,6 +250,7 @@ class MsgSigner(Signer):
                 address=self.topic_send_to.format(
                     **dict(list(asdict(self).items()) + list(asdict(operation).items()))
                 ),
+                ttl=self.timeout * self.retries,
             )
             LOG.debug(f"Construted message with request_id {ret.body['request_id']}")
             messages.append(ret)
@@ -714,6 +714,7 @@ class MsgBatchSigner(MsgSigner):
             address=self.topic_send_to.format(
                 **dict(list(asdict(self).items()) + list(asdict(operation).items()))
             ),
+            ttl=self.timeout * self.retries,
         )
         LOG.debug(f"Construted message with request_id {ret.body['request_id']}")
         messages.append(ret)

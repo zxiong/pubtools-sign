@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+1.0.6 (29-01-2026)
+-------------------
+* Fix batch signing digest inconsistency
+
 1.0.5 (29-01-2026)
 -------------------
 * Set ttl message property

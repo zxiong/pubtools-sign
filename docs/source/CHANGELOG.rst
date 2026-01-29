@@ -1,6 +1,10 @@
 ChangeLog
 =========
 
+1.0.5 (29-01-2026)
+-------------------
+* Set ttl message property
+
 1.0.4 (22-01-2026)
 -------------------
 * Fix sig type for batch signer
